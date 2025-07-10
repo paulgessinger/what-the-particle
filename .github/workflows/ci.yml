@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   test-python:
@@ -33,15 +33,6 @@ jobs:
     - name: Run tests
       run: |
         uv run pytest
-
-    - name: Upload coverage reports
-      if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: backend
-        name: backend-coverage
-      continue-on-error: true
 
   build-frontend:
     name: Build Frontend
@@ -111,33 +102,22 @@ jobs:
         docker stop test-container
         docker rm test-container
 
-  lint-and-format:
-    name: Lint and Format Check
+  pre-commit:
+    name: Pre-commit hooks
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v4
-      with:
-        version: "latest"
-
     - name: Set up Python
-      run: uv python install 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-    - name: Install dependencies
+    - name: Install pre-commit
       run: |
-        uv sync --all-extras
+        pip install pre-commit
 
-    - name: Run ruff linting
+    - name: Run pre-commit
       run: |
-        uv run ruff check .
-
-    - name: Run black formatting check
-      run: |
-        uv run black --check .
-
-    - name: Run mypy type checking
-      run: |
-        uv run mypy backend/
+        pre-commit run --all-files
