@@ -23,9 +23,10 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.10+
 - Node.js 16+
 - npm or yarn
+- Docker (optional, for containerized deployment)
 
 ### Installation & Setup
 
@@ -36,9 +37,24 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
    ```
 
 2. **Backend Setup**
+
+   **Option A: Using uv (recommended)**
+   ```bash
+   # Install uv if not already installed
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Install dependencies and run
+   uv sync
+   uv run python -m backend.main
+   ```
+
+   **Option B: Using pip with virtual environment**
    ```bash
    cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
+   python main.py
    ```
 
 3. **Frontend Setup**
@@ -47,32 +63,110 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
    npm install
    ```
 
-4. **Run the Application**
-   
-   **Option A: Using the convenience script**
-   ```bash
-   chmod +x run.sh
-   ./run.sh
-   ```
-   
-   **Option B: Manual startup**
-   
-   Terminal 1 (Backend):
-   ```bash
-   cd backend
-   python main.py
-   ```
-   
-   Terminal 2 (Frontend):
+## Running the Application
+
+### Development Mode (Separate Frontend/Backend)
+
+This runs frontend and backend on separate ports for development:
+
+**Option A: Using the convenience script**
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+**Option B: Manual startup**
+
+Terminal 1 (Backend):
+```bash
+cd backend
+python main.py
+# Or with uv: uv run python -m backend.main
+```
+
+Terminal 2 (Frontend):
+```bash
+cd frontend
+npm run dev
+```
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+### Production Mode (Single Server)
+
+For production, the backend serves both the API and the built frontend from a single port:
+
+1. **Build the Frontend**
    ```bash
    cd frontend
-   npm run dev
+   npm run build
    ```
 
-5. **Access the Application**
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
+2. **Run the Backend (which now serves static files)**
+   ```bash
+   # The backend will automatically serve the built frontend
+   cd backend
+   python main.py
+   # Or with uv: uv run python -m backend.main
+   ```
+
+3. **Access the Application**
+   - Complete Application: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+
+### Docker Deployment
+
+The Docker setup builds the frontend and serves everything through FastAPI in a single container:
+
+1. **Build the Docker Image**
+   ```bash
+   docker build -t particle-explorer .
+   ```
+
+2. **Run the Container**
+   ```bash
+   docker run -p 8000:8000 particle-explorer
+   ```
+
+3. **Access the Application**
+   - Complete Application: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+**Alternative Docker Commands:**
+```bash
+# Run tests
+docker run particle-explorer uv run pytest
+
+# Run with custom uvicorn settings
+docker run -p 8000:8000 particle-explorer uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+## Build Process Details
+
+### Frontend Build
+
+The frontend uses SvelteKit with a static adapter for production builds:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+This creates a `build/` directory containing:
+- `index.html` - Main HTML file
+- `_app/` - SvelteKit application assets (JS, CSS)
+- Static assets and other files
+
+### Backend Static File Serving
+
+The FastAPI backend automatically detects and serves frontend build files:
+
+- **API Routes**: `/particle/*`, `/search/*`, `/popular` - API endpoints
+- **Static Files**: `/_app/*` - SvelteKit application assets  
+- **SPA Fallback**: All other routes serve `index.html` for client-side routing
 
 ## Usage
 
@@ -113,11 +207,30 @@ Search for particles by name (partial matching).
 
 ## Development
 
+### Project Structure
+
+```
+particle-explorer/
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── requirements.txt     # Python dependencies
+│   └── __init__.py
+├── frontend/
+│   ├── src/                 # SvelteKit source code
+│   ├── build/              # Built static files (after npm run build)
+│   ├── package.json        # Node dependencies and scripts
+│   └── svelte.config.js    # SvelteKit configuration
+├── Dockerfile              # Multi-stage Docker build
+├── pyproject.toml          # Python project configuration (uv)
+├── run.sh                  # Development startup script
+└── README.md
+```
+
 ### Backend Development
 
 The backend uses FastAPI with automatic OpenAPI documentation. Key files:
 - `backend/main.py`: Main application and API routes
-- `backend/requirements.txt`: Python dependencies
+- Static file serving is automatically configured for production builds
 
 ### Frontend Development
 
@@ -126,11 +239,58 @@ The frontend is built with SvelteKit and Tailwind CSS. Key files:
 - `frontend/src/lib/components/`: Reusable components
 - `frontend/src/app.css`: Global styles and Tailwind configuration
 
+For development, use `npm run dev` which starts a development server with hot reload.
+For production, use `npm run build` which creates optimized static files.
+
 ### Adding New Features
 
 1. **Backend**: Add new endpoints in `main.py`
 2. **Frontend**: Create new components in `src/lib/components/`
 3. **Styling**: Use Tailwind classes or extend the configuration
+
+## Testing
+
+### Frontend Build Test
+```bash
+cd frontend
+npm install
+npm run build
+# Should create a build/ directory with index.html and _app/ folder
+ls -la build/
+```
+
+### Backend Static Serving Test
+```bash
+# After building the frontend
+cd backend
+python main.py
+# Visit http://localhost:8000 - should serve the complete application
+# Visit http://localhost:8000/docs - should show API documentation
+```
+
+### Docker Build Test
+```bash
+docker build -t particle-explorer .
+docker run -p 8000:8000 particle-explorer
+# Visit http://localhost:8000 - should serve the complete application
+```
+
+## Deployment Options
+
+### 1. Docker (Recommended)
+- Single container with both frontend and backend
+- Production-ready with optimized builds
+- Easy scaling and deployment
+
+### 2. Separate Services
+- Deploy frontend as static files (Netlify, Vercel, etc.)
+- Deploy backend as API service (Heroku, Railway, etc.)
+- Configure CORS for cross-origin requests
+
+### 3. Traditional Server
+- Build frontend: `npm run build`
+- Copy built files to web server
+- Run backend with static file serving
 
 ## Data Source
 

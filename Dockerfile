@@ -19,6 +19,13 @@ RUN npm ci --only=production
 COPY frontend/src ./src
 COPY frontend/static ./static
 
+# Install the static adapter for building a static site
+RUN npm install --save-dev @sveltejs/adapter-static
+
+# Update svelte.config.js to use static adapter for Docker builds
+RUN sed -i "s/adapter-auto/adapter-static/g" svelte.config.js && \
+    sed -i "s/adapter()/adapter({ fallback: 'index.html' })/g" svelte.config.js
+
 # Build the frontend
 RUN npm run build
 
@@ -55,34 +62,16 @@ RUN uv sync --frozen
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
 
-# Create a simple static file server script for the frontend
-RUN echo '#!/bin/bash\n\
-echo "Starting particle physics application..."\n\
-echo "Backend API will be available at http://localhost:8000"\n\
-echo "Frontend will be available at http://localhost:3000"\n\
-\n\
-# Start backend API server\n\
-cd /app && uv run python -m backend.main &\n\
-BACKEND_PID=$!\n\
-\n\
-# Start simple HTTP server for frontend\n\
-cd /app/frontend/build && python -m http.server 3000 &\n\
-FRONTEND_PID=$!\n\
-\n\
-# Wait for both processes\n\
-wait $BACKEND_PID $FRONTEND_PID\n\
-' > /app/start.sh && chmod +x /app/start.sh
-
-# Expose ports
-EXPOSE 8000 3000
+# Expose only port 8000 (FastAPI will serve everything)
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
-# Default command
-CMD ["/app/start.sh"]
+# Default command - run FastAPI server which serves both API and static files
+CMD ["uv", "run", "python", "-m", "backend.main"]
 
 # Alternative commands for development
-# To run only backend: docker run -p 8000:8000 <image> uv run python -m backend.main
 # To run tests: docker run <image> uv run pytest
+# To run with custom host/port: docker run -p 8000:8000 <image> uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000

@@ -1,10 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import particle
 from particle import Particle
 import math
+import os
+from pathlib import Path
 
 def safe_float(value):
     """Convert value to float, return None if inf, -inf, or NaN"""
@@ -27,11 +31,34 @@ app = FastAPI(
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Svelte dev server
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"],  # Include FastAPI serving static files
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Determine the static files directory
+# When running from Docker, the frontend build will be at /app/frontend/build
+# When running locally, it might be at ../frontend/build
+static_dir = None
+possible_static_dirs = [
+    Path("/app/frontend/build"),  # Docker path
+    Path(__file__).parent.parent / "frontend" / "build",  # Local development path
+    Path("frontend/build"),  # Alternative local path
+]
+
+for dir_path in possible_static_dirs:
+    if dir_path.exists() and dir_path.is_dir():
+        static_dir = dir_path
+        break
+
+if static_dir:
+    # Mount static files (CSS, JS, images, etc.)
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    
+    # Serve SvelteKit app files
+    if (static_dir / "_app").exists():
+        app.mount("/_app", StaticFiles(directory=static_dir / "_app"), name="svelte_app")
 
 class ParticleInfo(BaseModel):
     pdgid: int
@@ -195,6 +222,24 @@ async def get_popular_particles():
             continue
     
     return {"particles": particles}
+
+# Catch-all route to serve the frontend for SPA routing
+@app.get("/{path:path}")
+async def serve_frontend(path: str):
+    """Serve the frontend application for all unmatched routes"""
+    if static_dir:
+        # Check if the requested file exists
+        file_path = static_dir / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        
+        # For SPA routing, serve index.html for any path that doesn't exist
+        index_path = static_dir / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+    
+    # If no static files are available, return a simple message
+    return {"message": "Frontend not built yet. Run 'npm run build' in the frontend directory."}
 
 if __name__ == "__main__":
     import uvicorn
