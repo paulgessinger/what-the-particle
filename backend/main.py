@@ -4,6 +4,19 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import particle
 from particle import Particle
+import math
+
+def safe_float(value):
+    """Convert value to float, return None if inf, -inf, or NaN"""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        if math.isinf(f) or math.isnan(f):
+            return None
+        return f
+    except (ValueError, TypeError):
+        return None
 
 app = FastAPI(
     title="Particle Information API",
@@ -56,51 +69,88 @@ async def get_particle_by_pdgid(pdgid: int):
         p = Particle.from_pdgid(pdgid)
         
         return ParticleInfo(
-            pdgid=p.pdgid,
+            pdgid=int(p.pdgid),
             name=p.name,
-            latex_name=p.latex_name if hasattr(p, 'latex_name') else p.name,
-            mass=float(p.mass) if p.mass is not None else None,
-            mass_upper=float(p.mass_upper) if hasattr(p, 'mass_upper') and p.mass_upper is not None else None,
-            mass_lower=float(p.mass_lower) if hasattr(p, 'mass_lower') and p.mass_lower is not None else None,
-            width=float(p.width) if p.width is not None else None,
-            width_upper=float(p.width_upper) if hasattr(p, 'width_upper') and p.width_upper is not None else None,
-            width_lower=float(p.width_lower) if hasattr(p, 'width_lower') and p.width_lower is not None else None,
-            charge=float(p.charge) if p.charge is not None else None,
-            three_charge=p.three_charge if hasattr(p, 'three_charge') else None,
-            spin=float(p.spin) if p.spin is not None else None,
-            parity=p.parity if hasattr(p, 'parity') else None,
-            c_parity=p.c_parity if hasattr(p, 'c_parity') else None,
-            g_parity=p.g_parity if hasattr(p, 'g_parity') else None,
-            anti_particle_pdgid=p.anti_particle.pdgid if p.anti_particle is not None else None,
-            status=str(p.status) if hasattr(p, 'status') else None,
-            lifetime=float(p.lifetime) if p.lifetime is not None else None,
-            ctau=float(p.ctau) if hasattr(p, 'ctau') and p.ctau is not None else None
+            latex_name=getattr(p, 'latex_name', p.name),
+            mass=safe_float(p.mass),
+            mass_upper=safe_float(getattr(p, 'mass_upper', None)),
+            mass_lower=safe_float(getattr(p, 'mass_lower', None)),
+            width=safe_float(p.width),
+            width_upper=safe_float(getattr(p, 'width_upper', None)),
+            width_lower=safe_float(getattr(p, 'width_lower', None)),
+            charge=safe_float(p.charge),
+            three_charge=getattr(p, 'three_charge', None),
+            spin=safe_float(getattr(p, 'J', None)),
+            parity=getattr(p, 'P', None),
+            c_parity=getattr(p, 'C', None),
+            g_parity=getattr(p, 'G', None),
+            anti_particle_pdgid=int(p.invert().pdgid) if p.invert() != p else None,
+            status=str(p.status) if hasattr(p, 'status') and p.status is not None else None,
+            lifetime=safe_float(p.lifetime),
+            ctau=safe_float(getattr(p, 'ctau', None))
         )
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Particle with PDG ID {pdgid} not found: {str(e)}")
+
+@app.get("/search", response_model=SearchResult)
+async def search_particles_empty(limit: int = 10):
+    """Handle empty search query"""
+    return SearchResult(particles=[], total=0)
 
 @app.get("/search/{query}", response_model=SearchResult)
 async def search_particles(query: str, limit: int = 10):
     """Search for particles by name"""
     try:
-        # Get all particles and filter by name
-        all_particles = particle.data_table.load_table("particle2022.csv")
         matching_particles = []
         
+        # Handle empty query
+        if not query.strip():
+            return SearchResult(particles=[], total=0)
+        
+        # Use a simple approach: test common particles first for the query
+        common_pdgids = [
+            11, -11, 13, -13, 22, 111, 211, -211, 321, -321,
+            2212, -2212, 2112, -2112, 3122, -3122, 3112, -3112,
+            1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6,
+            15, -15, 12, -12, 14, -14, 16, -16,
+            130, 310, 311, -311, 313, -313, 323, -323,
+        ]
+        
         query_lower = query.lower()
-        for p in all_particles:
-            if query_lower in p.name.lower() or (hasattr(p, 'latex_name') and query_lower in p.latex_name.lower()):
-                particle_dict = {
-                    "pdgid": p.pdgid,
-                    "name": p.name,
-                    "latex_name": p.latex_name if hasattr(p, 'latex_name') else p.name,
-                    "mass": float(p.mass) if p.mass is not None else None,
-                    "charge": float(p.charge) if p.charge is not None else None,
-                }
-                matching_particles.append(particle_dict)
+        
+        for pdgid in common_pdgids:
+            try:
+                p = Particle.from_pdgid(pdgid)
+                name_lower = p.name.lower()
+                latex_name_lower = getattr(p, 'latex_name', p.name).lower()
                 
-                if len(matching_particles) >= limit:
-                    break
+                # Check if query matches name or common name patterns
+                matches = (
+                    query_lower in name_lower or
+                    query_lower in latex_name_lower or
+                    (query_lower == "electron" and name_lower in ["e-", "e+"]) or
+                    (query_lower == "muon" and name_lower.startswith("mu")) or
+                    (query_lower == "proton" and name_lower == "p") or
+                    (query_lower == "neutron" and name_lower == "n") or
+                    (query_lower == "photon" and name_lower == "gamma") or
+                    (query_lower == "pion" and "pi" in name_lower)
+                )
+                
+                if matches:
+                    particle_dict = {
+                        "pdgid": int(p.pdgid),
+                        "name": p.name,
+                        "latex_name": getattr(p, 'latex_name', p.name),
+                        "mass": safe_float(p.mass),
+                        "charge": safe_float(p.charge),
+                    }
+                    matching_particles.append(particle_dict)
+                    
+                    if len(matching_particles) >= limit:
+                        break
+            except:
+                # Skip particles that can't be loaded
+                continue
         
         return SearchResult(particles=matching_particles, total=len(matching_particles))
     except Exception as e:
@@ -135,11 +185,11 @@ async def get_popular_particles():
         try:
             p = Particle.from_pdgid(pdgid)
             particles.append({
-                "pdgid": p.pdgid,
+                "pdgid": int(p.pdgid),
                 "name": p.name,
-                "latex_name": p.latex_name if hasattr(p, 'latex_name') else p.name,
-                "mass": float(p.mass) if p.mass is not None else None,
-                "charge": float(p.charge) if p.charge is not None else None,
+                "latex_name": getattr(p, 'latex_name', p.name),
+                "mass": safe_float(p.mass),
+                "charge": safe_float(p.charge),
             })
         except:
             continue
