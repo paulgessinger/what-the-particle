@@ -48,21 +48,21 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
    ```
 
 4. **Run the Application**
-   
+
    **Option A: Using the convenience script**
    ```bash
    chmod +x run.sh
    ./run.sh
    ```
-   
+
    **Option B: Manual startup**
-   
+
    Terminal 1 (Backend):
    ```bash
    cd backend
    python main.py
    ```
-   
+
    Terminal 2 (Frontend):
    ```bash
    cd frontend
@@ -81,7 +81,7 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
 Enter a PDG ID in the search bar to get detailed particle information:
 
 - **11**: Electron
-- **-11**: Positron  
+- **-11**: Positron
 - **13**: Muon
 - **22**: Photon
 - **2212**: Proton

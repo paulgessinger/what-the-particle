@@ -6,7 +6,7 @@
   import PopularParticles from '../lib/components/PopularParticles.svelte';
 
   const API_BASE = 'http://localhost:8000';
-  
+
   let searchQuery = '';
   let currentParticle = null;
   let loading = false;
@@ -25,10 +25,10 @@
 
   async function searchParticle(pdgId) {
     if (!pdgId) return;
-    
+
     loading = true;
     error = null;
-    
+
     try {
       const response = await axios.get(`${API_BASE}/particle/${pdgId}`);
       currentParticle = response.data;
@@ -67,14 +67,14 @@
         <p class="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto animate-fade-in">
           Discover fundamental particles using PDG IDs. Search through the complete database of quarks, leptons, bosons, and more with detailed physics properties.
         </p>
-        
+
         <!-- Search Interface -->
         <div class="max-w-2xl mx-auto mb-16 animate-slide-up">
           <SearchBar bind:searchQuery on:search={handleSearch} {loading} />
         </div>
       </div>
     </div>
-    
+
     <!-- Floating particles background -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-primary-400 rounded-full animate-pulse-subtle"></div>
@@ -89,12 +89,12 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Popular Particles Sidebar -->
       <div class="lg:col-span-1">
-        <PopularParticles 
-          particles={popularParticles} 
-          on:particleClick={(e) => handlePopularParticleClick(e.detail)} 
+        <PopularParticles
+          particles={popularParticles}
+          on:particleClick={(e) => handlePopularParticleClick(e.detail)}
         />
       </div>
-      
+
       <!-- Main Content Area -->
       <div class="lg:col-span-2">
         {#if loading}

@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+
 from backend.main import app
 
 
@@ -35,11 +36,30 @@ def sample_particle_data():
         },
         "invalid": {
             "pdgid": 99999999,  # Non-existent particle
-        }
+        },
     }
 
 
 @pytest.fixture
 def popular_particles_pdgids():
     """PDG IDs of particles that should be in the popular list."""
-    return [11, -11, 13, -13, 22, 111, 211, -211, 2212, -2212, 2112, -2112, 1, 2, 3, 4, 5, 6]
+    return [
+        11,
+        -11,
+        13,
+        -13,
+        22,
+        111,
+        211,
+        -211,
+        2212,
+        -2212,
+        2112,
+        -2112,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+    ]

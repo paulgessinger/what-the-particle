@@ -91,13 +91,13 @@ jobs:
       run: |
         # Run the container in detached mode
         docker run -d --name test-container -p 8000:8000 -p 3000:3000 particle-physics-api:test
-        
+
         # Wait for services to start
         sleep 30
-        
+
         # Test backend health
         curl -f http://localhost:8000/ || (docker logs test-container && exit 1)
-        
+
         # Cleanup
         docker stop test-container
         docker rm test-container
@@ -112,7 +112,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.13'
 
     - name: Install pre-commit
       run: |
