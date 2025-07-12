@@ -1,14 +1,14 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  
+
   export let particles = [];
-  
+
   const dispatch = createEventDispatcher();
-  
+
   function handleParticleClick(particle) {
     dispatch('particleClick', particle);
   }
-  
+
   function getParticleEmoji(name) {
     const lowerName = name.toLowerCase();
     if (lowerName.includes('electron')) return '🔵';
@@ -20,7 +20,7 @@
     if (lowerName.includes('quark')) return '🟦';
     return '⚛️';
   }
-  
+
   function formatMassShort(mass) {
     if (mass === null || mass === undefined) return '';
     if (mass === 0) return '0 MeV';
@@ -41,7 +41,7 @@
     </svg>
     <span>Popular Particles</span>
   </h3>
-  
+
   {#if particles.length === 0}
     <div class="flex items-center justify-center py-8">
       <div class="animate-spin w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full"></div>
@@ -81,7 +81,7 @@
         </button>
       {/each}
     </div>
-    
+
     <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
       <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
         Click any particle to view detailed information

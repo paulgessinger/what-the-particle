@@ -1,6 +1,6 @@
 <script>
   export let particle;
-  
+
   function getParticleType(name) {
     const lowerName = name.toLowerCase();
     if (lowerName.includes('electron') || lowerName.includes('e-') || lowerName.includes('e+')) return 'electron';
@@ -11,7 +11,7 @@
     if (lowerName.includes('pion') || lowerName.includes('pi')) return 'pion';
     return 'default';
   }
-  
+
   function formatMass(mass) {
     if (mass === null || mass === undefined) return 'Unknown';
     if (mass === 0) return '0';
@@ -21,13 +21,13 @@
     }
     return mass.toFixed(6);
   }
-  
+
   function formatLifetime(lifetime) {
     if (lifetime === null || lifetime === undefined) return 'Unknown';
     if (lifetime === Infinity || lifetime === -1) return 'Stable';
     return lifetime.toExponential(3);
   }
-  
+
   function formatCharge(charge) {
     if (charge === null || charge === undefined) return 'Unknown';
     if (charge === 0) return '0';
@@ -35,7 +35,7 @@
     if (charge === -1) return '-1';
     return charge > 0 ? `+${charge}` : charge.toString();
   }
-  
+
   $: particleType = getParticleType(particle.name);
 </script>
 
@@ -61,25 +61,25 @@
     <!-- Basic Properties -->
     <div class="space-y-4">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Properties</h3>
-      
+
       <div class="space-y-3">
         <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
           <span class="text-gray-600 dark:text-gray-400">PDG ID</span>
           <span class="font-mono font-semibold text-gray-900 dark:text-white">{particle.pdgid}</span>
         </div>
-        
+
         <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
           <span class="text-gray-600 dark:text-gray-400">Electric Charge</span>
           <span class="font-mono font-semibold text-gray-900 dark:text-white">{formatCharge(particle.charge)} e</span>
         </div>
-        
+
         {#if particle.three_charge !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
             <span class="text-gray-600 dark:text-gray-400">Three-Charge</span>
             <span class="font-mono font-semibold text-gray-900 dark:text-white">{particle.three_charge}</span>
           </div>
         {/if}
-        
+
         {#if particle.spin !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
             <span class="text-gray-600 dark:text-gray-400">Spin</span>
@@ -92,27 +92,27 @@
     <!-- Mass and Energy -->
     <div class="space-y-4">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Mass & Energy</h3>
-      
+
       <div class="space-y-3">
         <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
           <span class="text-gray-600 dark:text-gray-400">Mass</span>
           <span class="font-mono font-semibold text-gray-900 dark:text-white">{formatMass(particle.mass)} MeV/c²</span>
         </div>
-        
+
         {#if particle.width !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
             <span class="text-gray-600 dark:text-gray-400">Width</span>
             <span class="font-mono font-semibold text-gray-900 dark:text-white">{formatMass(particle.width)} MeV</span>
           </div>
         {/if}
-        
+
         {#if particle.lifetime !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
             <span class="text-gray-600 dark:text-gray-400">Lifetime</span>
             <span class="font-mono font-semibold text-gray-900 dark:text-white">{formatLifetime(particle.lifetime)} s</span>
           </div>
         {/if}
-        
+
         {#if particle.ctau !== null && particle.ctau !== 0}
           <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
             <span class="text-gray-600 dark:text-gray-400">cτ (decay length)</span>
@@ -134,14 +134,14 @@
             <div class="text-xl font-bold text-gray-900 dark:text-white">{particle.parity > 0 ? '+' : '-'}</div>
           </div>
         {/if}
-        
+
         {#if particle.c_parity !== null}
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">C-Parity</div>
             <div class="text-xl font-bold text-gray-900 dark:text-white">{particle.c_parity > 0 ? '+' : '-'}</div>
           </div>
         {/if}
-        
+
         {#if particle.g_parity !== null}
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">G-Parity</div>

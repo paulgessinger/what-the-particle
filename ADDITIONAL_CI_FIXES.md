@@ -23,7 +23,7 @@ Error: Some specified paths were not resolved, unable to cache dependencies.
 **Error Message**:
 ```
 > [frontend-builder 11/14] COPY frontend/static ./static:
-ERROR: failed to build: failed to solve: failed to compute cache key: 
+ERROR: failed to build: failed to solve: failed to compute cache key:
 failed to calculate checksum of ref...: "/frontend/static": not found
 ```
 
@@ -56,7 +56,7 @@ cd frontend
 npm ci  # Works correctly with committed package-lock.json
 ```
 
-### ✅ Frontend Build Test  
+### ✅ Frontend Build Test
 ```bash
 # CI build process simulation
 sed -i "s/adapter-auto/adapter-static/g" svelte.config.js
@@ -72,7 +72,7 @@ ls -la build/
 ```bash
 # All directories/files Docker expects now exist:
 ls frontend/src/        # ✅ Source code
-ls frontend/static/     # ✅ Static assets directory  
+ls frontend/static/     # ✅ Static assets directory
 ls frontend/package*.json  # ✅ Package files
 ```
 
@@ -83,7 +83,7 @@ ls frontend/package*.json  # ✅ Package files
 2. **Build Success**: Static adapter will create `build/` directory correctly
 3. **Verification**: Build output validation will pass
 
-### Docker Build Job  
+### Docker Build Job
 1. **Copy Success**: All `COPY` commands will work (src, static, package files)
 2. **Build Success**: Frontend build stage will complete
 3. **Runtime Success**: Container will start and serve the application
@@ -100,7 +100,7 @@ commit fd23256
 Fix CI and Docker build issues
 
 - Remove package-lock.json from .gitignore to enable proper frontend caching
-- Add frontend/package-lock.json for reliable dependency resolution  
+- Add frontend/package-lock.json for reliable dependency resolution
 - Create frontend/static directory to fix Docker build error
 - Docker was failing because it expected frontend/static to exist
 ```

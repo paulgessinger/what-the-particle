@@ -42,7 +42,7 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
    ```bash
    # Install uv if not already installed
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
+
    # Install dependencies and run
    uv sync
    uv run python -m backend.main
@@ -52,7 +52,7 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
    ```bash
    # Install uv if not already installed
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
+
    # Install dependencies and run
    uv sync
    uv run python -m backend.main
@@ -163,7 +163,7 @@ This creates a `build/` directory containing:
 The FastAPI backend automatically detects and serves frontend build files:
 
 - **API Routes**: `/particle/*`, `/search/*`, `/popular` - API endpoints
-- **Static Files**: `/_app/*` - SvelteKit application assets  
+- **Static Files**: `/_app/*` - SvelteKit application assets
 - **SPA Fallback**: All other routes serve `index.html` for client-side routing
 
 ## Usage
@@ -173,7 +173,7 @@ The FastAPI backend automatically detects and serves frontend build files:
 Enter a PDG ID in the search bar to get detailed particle information:
 
 - **11**: Electron
-- **-11**: Positron  
+- **-11**: Positron
 - **13**: Muon
 - **22**: Photon
 - **2212**: Proton

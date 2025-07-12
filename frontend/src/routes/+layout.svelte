@@ -1,8 +1,8 @@
 <script>
   import '../app.css';
-  
+
   let darkMode = true;
-  
+
   function toggleDarkMode() {
     darkMode = !darkMode;
     if (darkMode) {
@@ -24,7 +24,7 @@
           <span class="text-xl font-bold text-gray-900 dark:text-white">Particle Explorer</span>
         </a>
       </div>
-      
+
       <div class="flex items-center space-x-4">
         <button
           on:click={toggleDarkMode}
@@ -41,9 +41,9 @@
             </svg>
           {/if}
         </button>
-        
-        <a 
-          href="https://github.com" 
+
+        <a
+          href="https://github.com"
           class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
           target="_blank"
           rel="noopener noreferrer"

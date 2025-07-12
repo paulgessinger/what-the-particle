@@ -84,10 +84,25 @@ class TestParticleEndpoint:
 
         data = response.json()
         expected_fields = {
-            "pdgid", "name", "latex_name", "mass", "mass_upper", "mass_lower",
-            "width", "width_upper", "width_lower", "charge", "three_charge",
-            "spin", "parity", "c_parity", "g_parity", "anti_particle_pdgid",
-            "status", "lifetime", "ctau"
+            "pdgid",
+            "name",
+            "latex_name",
+            "mass",
+            "mass_upper",
+            "mass_lower",
+            "width",
+            "width_upper",
+            "width_lower",
+            "charge",
+            "three_charge",
+            "spin",
+            "parity",
+            "c_parity",
+            "g_parity",
+            "anti_particle_pdgid",
+            "status",
+            "lifetime",
+            "ctau",
         }
 
         assert set(data.keys()) == expected_fields
@@ -197,7 +212,13 @@ class TestPopularEndpoint:
         response_pdgids = {p["pdgid"] for p in particles}
 
         # Check that common particles are included
-        common_particles = {11, -11, 22, 2212, 2112}  # electron, positron, photon, proton, neutron
+        common_particles = {
+            11,
+            -11,
+            22,
+            2212,
+            2112,
+        }  # electron, positron, photon, proton, neutron
         assert common_particles.issubset(response_pdgids)
 
     def test_popular_particle_structure(self, client):

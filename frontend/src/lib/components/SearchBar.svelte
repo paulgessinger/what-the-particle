@@ -1,11 +1,11 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  
+
   export let searchQuery = '';
   export let loading = false;
-  
+
   const dispatch = createEventDispatcher();
-  
+
   function handleSubmit() {
     const pdgId = parseInt(searchQuery.trim());
     if (isNaN(pdgId)) {
@@ -13,13 +13,13 @@
     }
     dispatch('search', { pdgId });
   }
-  
+
   function handleKeydown(event) {
     if (event.key === 'Enter') {
       handleSubmit();
     }
   }
-  
+
   $: isValidPdgId = searchQuery.trim() !== '' && !isNaN(parseInt(searchQuery.trim()));
 </script>
 
@@ -30,7 +30,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </div>
-    
+
     <input
       type="text"
       bind:value={searchQuery}
@@ -39,7 +39,7 @@
       class="input-field pl-12 pr-24 text-lg h-14"
       disabled={loading}
     />
-    
+
     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
       <button
         on:click={handleSubmit}
@@ -58,14 +58,14 @@
       </button>
     </div>
   </div>
-  
+
   {#if searchQuery.trim() !== '' && !isValidPdgId}
     <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid numeric PDG ID</p>
   {/if}
-  
+
   <div class="mt-4 text-center">
     <p class="text-sm text-gray-500 dark:text-gray-400">
-      Don't know PDG IDs? Try some examples: 
+      Don't know PDG IDs? Try some examples:
       <button on:click={() => {searchQuery = '11'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">11</button>,
       <button on:click={() => {searchQuery = '2212'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">2212</button>,
       <button on:click={() => {searchQuery = '22'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">22</button>, or

@@ -13,7 +13,7 @@ Created a comprehensive CI pipeline with the following jobs:
 - **Package Manager**: Uses `uv` for fast dependency management
 - **Quality Checks**:
   - Code linting with `ruff`
-  - Type checking with `mypy` 
+  - Type checking with `mypy`
   - Test execution with `pytest`
   - Coverage reporting with `codecov`
 - **Dependencies**: Installs all extras (`test`, `dev`) using `uv sync --all-extras`
@@ -89,7 +89,7 @@ uv sync --all-extras
 # Run linting
 uv run ruff check .
 
-# Run type checking  
+# Run type checking
 uv run mypy backend/
 
 # Run tests
@@ -104,7 +104,7 @@ uv run pytest tests/ -v --cov=backend
 
 ## Test Results
 - **Linting**: All ruff checks pass ✅
-- **Type Checking**: All mypy checks pass ✅  
+- **Type Checking**: All mypy checks pass ✅
 - **Unit Tests**: 25/27 tests pass (2 failing tests related to catch-all route behavior)
 - **Frontend Build**: Successfully builds SvelteKit application ✅
 - **Integration**: Backend starts and serves API correctly ✅

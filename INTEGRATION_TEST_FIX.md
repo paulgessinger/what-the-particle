@@ -38,7 +38,7 @@ async def serve_frontend(path: str) -> Any:
     api_prefixes = ["particle", "search", "popular", "docs", "openapi.json", "redoc"]
     if any(path.startswith(prefix) for prefix in api_prefixes):
         raise HTTPException(status_code=404, detail="Not found")
-    
+
     if static_dir:
         return FileResponse(static_dir / "index.html")
 ```

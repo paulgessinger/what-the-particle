@@ -22,16 +22,21 @@ def safe_float(value: Any) -> float | None:
     except (ValueError, TypeError):
         return None
 
+
 app = FastAPI(
     title="Particle Information API",
     description="Get information about particles using PDG IDs",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"],  # Include FastAPI serving static files
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:8000",
+    ],  # Include FastAPI serving static files
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,7 +63,10 @@ if static_dir:
 
     # Serve SvelteKit app files
     if (static_dir / "_app").exists():
-        app.mount("/_app", StaticFiles(directory=static_dir / "_app"), name="svelte_app")
+        app.mount(
+            "/_app", StaticFiles(directory=static_dir / "_app"), name="svelte_app"
+        )
+
 
 class ParticleInfo(BaseModel):
     pdgid: int
@@ -81,13 +89,16 @@ class ParticleInfo(BaseModel):
     lifetime: float | None
     ctau: float | None
 
+
 class SearchResult(BaseModel):
     particles: list[dict[str, Any]]
     total: int
 
+
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "Particle Information API", "version": "1.0.0"}
+
 
 @app.get("/particle/{pdgid}", response_model=ParticleInfo)
 async def get_particle_by_pdgid(pdgid: int) -> ParticleInfo:
@@ -98,31 +109,37 @@ async def get_particle_by_pdgid(pdgid: int) -> ParticleInfo:
         return ParticleInfo(
             pdgid=int(p.pdgid),
             name=p.name,
-            latex_name=getattr(p, 'latex_name', p.name),
+            latex_name=getattr(p, "latex_name", p.name),
             mass=safe_float(p.mass),
-            mass_upper=safe_float(getattr(p, 'mass_upper', None)),
-            mass_lower=safe_float(getattr(p, 'mass_lower', None)),
+            mass_upper=safe_float(getattr(p, "mass_upper", None)),
+            mass_lower=safe_float(getattr(p, "mass_lower", None)),
             width=safe_float(p.width),
-            width_upper=safe_float(getattr(p, 'width_upper', None)),
-            width_lower=safe_float(getattr(p, 'width_lower', None)),
+            width_upper=safe_float(getattr(p, "width_upper", None)),
+            width_lower=safe_float(getattr(p, "width_lower", None)),
             charge=safe_float(p.charge),
-            three_charge=getattr(p, 'three_charge', None),
-            spin=safe_float(getattr(p, 'J', None)),
-            parity=getattr(p, 'P', None),
-            c_parity=getattr(p, 'C', None),
-            g_parity=getattr(p, 'G', None),
+            three_charge=getattr(p, "three_charge", None),
+            spin=safe_float(getattr(p, "J", None)),
+            parity=getattr(p, "P", None),
+            c_parity=getattr(p, "C", None),
+            g_parity=getattr(p, "G", None),
             anti_particle_pdgid=int(p.invert().pdgid) if p.invert() != p else None,
-            status=str(p.status) if hasattr(p, 'status') and p.status is not None else None,
+            status=str(p.status)
+            if hasattr(p, "status") and p.status is not None
+            else None,
             lifetime=safe_float(p.lifetime),
-            ctau=safe_float(getattr(p, 'ctau', None))
+            ctau=safe_float(getattr(p, "ctau", None)),
         )
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Particle with PDG ID {pdgid} not found: {str(e)}") from e
+        raise HTTPException(
+            status_code=404, detail=f"Particle with PDG ID {pdgid} not found: {str(e)}"
+        ) from e
+
 
 @app.get("/search", response_model=SearchResult)
 async def search_particles_empty(limit: int = 10) -> SearchResult:
     """Handle empty search query"""
     return SearchResult(particles=[], total=0)
+
 
 @app.get("/search/{query}", response_model=SearchResult)
 async def search_particles(query: str, limit: int = 10) -> SearchResult:
@@ -136,11 +153,52 @@ async def search_particles(query: str, limit: int = 10) -> SearchResult:
 
         # Use a simple approach: test common particles first for the query
         common_pdgids = [
-            11, -11, 13, -13, 22, 111, 211, -211, 321, -321,
-            2212, -2212, 2112, -2112, 3122, -3122, 3112, -3112,
-            1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6,
-            15, -15, 12, -12, 14, -14, 16, -16,
-            130, 310, 311, -311, 313, -313, 323, -323,
+            11,
+            -11,
+            13,
+            -13,
+            22,
+            111,
+            211,
+            -211,
+            321,
+            -321,
+            2212,
+            -2212,
+            2112,
+            -2112,
+            3122,
+            -3122,
+            3112,
+            -3112,
+            1,
+            -1,
+            2,
+            -2,
+            3,
+            -3,
+            4,
+            -4,
+            5,
+            -5,
+            6,
+            -6,
+            15,
+            -15,
+            12,
+            -12,
+            14,
+            -14,
+            16,
+            -16,
+            130,
+            310,
+            311,
+            -311,
+            313,
+            -313,
+            323,
+            -323,
         ]
 
         query_lower = query.lower()
@@ -149,25 +207,25 @@ async def search_particles(query: str, limit: int = 10) -> SearchResult:
             try:
                 p = Particle.from_pdgid(pdgid)
                 name_lower = p.name.lower()
-                latex_name_lower = getattr(p, 'latex_name', p.name).lower()
+                latex_name_lower = getattr(p, "latex_name", p.name).lower()
 
                 # Check if query matches name or common name patterns
                 matches = (
-                    query_lower in name_lower or
-                    query_lower in latex_name_lower or
-                    (query_lower == "electron" and name_lower in ["e-", "e+"]) or
-                    (query_lower == "muon" and name_lower.startswith("mu")) or
-                    (query_lower == "proton" and name_lower == "p") or
-                    (query_lower == "neutron" and name_lower == "n") or
-                    (query_lower == "photon" and name_lower == "gamma") or
-                    (query_lower == "pion" and "pi" in name_lower)
+                    query_lower in name_lower
+                    or query_lower in latex_name_lower
+                    or (query_lower == "electron" and name_lower in ["e-", "e+"])
+                    or (query_lower == "muon" and name_lower.startswith("mu"))
+                    or (query_lower == "proton" and name_lower == "p")
+                    or (query_lower == "neutron" and name_lower == "n")
+                    or (query_lower == "photon" and name_lower == "gamma")
+                    or (query_lower == "pion" and "pi" in name_lower)
                 )
 
                 if matches:
                     particle_dict = {
                         "pdgid": int(p.pdgid),
                         "name": p.name,
-                        "latex_name": getattr(p, 'latex_name', p.name),
+                        "latex_name": getattr(p, "latex_name", p.name),
                         "mass": safe_float(p.mass),
                         "charge": safe_float(p.charge),
                     }
@@ -183,45 +241,49 @@ async def search_particles(query: str, limit: int = 10) -> SearchResult:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}") from e
 
+
 @app.get("/popular")
 async def get_popular_particles() -> dict[str, list[dict[str, Any]]]:
     """Get a list of commonly searched particles"""
     popular_pdgids = [
-        11,    # electron
-        -11,   # positron
-        13,    # muon
-        -13,   # anti-muon
-        22,    # photon
-        111,   # neutral pion
-        211,   # charged pion
+        11,  # electron
+        -11,  # positron
+        13,  # muon
+        -13,  # anti-muon
+        22,  # photon
+        111,  # neutral pion
+        211,  # charged pion
         -211,  # negative pion
         2212,  # proton
-        -2212, # anti-proton
+        -2212,  # anti-proton
         2112,  # neutron
-        -2112, # anti-neutron
-        1,     # down quark
-        2,     # up quark
-        3,     # strange quark
-        4,     # charm quark
-        5,     # bottom quark
-        6,     # top quark
+        -2112,  # anti-neutron
+        1,  # down quark
+        2,  # up quark
+        3,  # strange quark
+        4,  # charm quark
+        5,  # bottom quark
+        6,  # top quark
     ]
 
     particles = []
     for pdgid in popular_pdgids:
         try:
             p = Particle.from_pdgid(pdgid)
-            particles.append({
-                "pdgid": int(p.pdgid),
-                "name": p.name,
-                "latex_name": getattr(p, 'latex_name', p.name),
-                "mass": safe_float(p.mass),
-                "charge": safe_float(p.charge),
-            })
+            particles.append(
+                {
+                    "pdgid": int(p.pdgid),
+                    "name": p.name,
+                    "latex_name": getattr(p, "latex_name", p.name),
+                    "mass": safe_float(p.mass),
+                    "charge": safe_float(p.charge),
+                }
+            )
         except Exception:
             continue
 
     return {"particles": particles}
+
 
 # Catch-all route to serve the frontend for SPA routing
 @app.get("/{path:path}")
@@ -232,7 +294,7 @@ async def serve_frontend(path: str) -> Any:
     if any(path.startswith(prefix) for prefix in api_prefixes):
         # Let FastAPI handle API routes with proper error responses
         raise HTTPException(status_code=404, detail="Not found")
-    
+
     if static_dir:
         # Check if the requested file exists
         file_path = static_dir / path
@@ -245,8 +307,12 @@ async def serve_frontend(path: str) -> Any:
             return FileResponse(index_path)
 
     # If no static files are available, return a simple message
-    return {"message": "Frontend not built yet. Run 'npm run build' in the frontend directory."}
+    return {
+        "message": "Frontend not built yet. Run 'npm run build' in the frontend directory."
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

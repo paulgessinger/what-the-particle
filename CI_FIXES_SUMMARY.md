@@ -17,7 +17,7 @@
 # Before
 cache-dependency-path: frontend/package-lock.json
 
-# After  
+# After
 cache-dependency-path: './frontend/package-lock.json'
 ```
 

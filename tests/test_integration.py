@@ -37,9 +37,7 @@ class TestParticleWorkflow:
         assert popular_response.status_code == 200
 
         popular_data = popular_response.json()
-        electron_in_popular = any(
-            p["pdgid"] == 11 for p in popular_data["particles"]
-        )
+        electron_in_popular = any(p["pdgid"] == 11 for p in popular_data["particles"])
         assert electron_in_popular
 
     def test_quark_family_lookup(self, client):
@@ -59,15 +57,15 @@ class TestParticleWorkflow:
 
         # Check that quark names are as expected
         found_names = {q["name"] for q in quarks_found}
-        expected_names = set(quark_names[:len(quarks_found)])
+        expected_names = set(quark_names[: len(quarks_found)])
         assert found_names.intersection(expected_names) == expected_names
 
     def test_particle_antiparticle_symmetry(self, client):
         """Test that particles and their antiparticles have correct relationships."""
         test_pairs = [
-            (11, -11),    # electron, positron
-            (13, -13),    # muon, anti-muon
-            (2212, -2212), # proton, anti-proton
+            (11, -11),  # electron, positron
+            (13, -13),  # muon, anti-muon
+            (2212, -2212),  # proton, anti-proton
         ]
 
         for particle_id, antiparticle_id in test_pairs:
@@ -86,11 +84,19 @@ class TestParticleWorkflow:
             antiparticle_data = antiparticle_response.json()
 
             # Check charge symmetry
-            if particle_data["charge"] is not None and antiparticle_data["charge"] is not None:
-                assert abs(particle_data["charge"] + antiparticle_data["charge"]) < 1e-10
+            if (
+                particle_data["charge"] is not None
+                and antiparticle_data["charge"] is not None
+            ):
+                assert (
+                    abs(particle_data["charge"] + antiparticle_data["charge"]) < 1e-10
+                )
 
             # Check mass equality
-            if particle_data["mass"] is not None and antiparticle_data["mass"] is not None:
+            if (
+                particle_data["mass"] is not None
+                and antiparticle_data["mass"] is not None
+            ):
                 assert abs(particle_data["mass"] - antiparticle_data["mass"]) < 1e-6
 
 
