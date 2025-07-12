@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from particle import Particle
 from pydantic import BaseModel
+import logging
 
 
 def safe_float(value: Any) -> float | None:
@@ -95,9 +96,6 @@ class SearchResult(BaseModel):
     total: int
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Particle Information API", "version": "1.0.0"}
 
 
 @app.get("/particle/{pdgid}", response_model=ParticleInfo)
@@ -306,13 +304,18 @@ async def serve_frontend(path: str) -> Any:
         if index_path.exists():
             return FileResponse(index_path)
 
-    # If no static files are available, return a simple message
-    return {
-        "message": "Frontend not built yet. Run 'npm run build' in the frontend directory."
-    }
+    # If no static files are available
+    logging.error("Frontend not built yet. Run 'npm run build' in the frontend directory.")
+    raise HTTPException(status_code=500, detail="Internal server error")
 
 
 if __name__ == "__main__":
     import uvicorn
+    import argparse
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+
+    uvicorn.run(app, host=args.host, port=args.port)
