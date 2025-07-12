@@ -459,14 +459,12 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "fastapi", extra = ["standard"] },
-    { name = "ruff" },
-    { name = "ty" },
-]
-test = [
     { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
 ]
 
 [package.metadata]
@@ -481,14 +479,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.0" },
-    { name = "ruff", specifier = ">=0.1.0" },
-    { name = "ty", specifier = ">=0.0.1a14" },
-]
-test = [
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", specifier = ">=0.23.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+    { name = "ty", specifier = ">=0.0.1a14" },
 ]
 
 [[package]]

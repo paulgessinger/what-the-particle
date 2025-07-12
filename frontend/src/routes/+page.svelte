@@ -5,7 +5,10 @@
   import SearchBar from '../lib/components/SearchBar.svelte';
   import PopularParticles from '../lib/components/PopularParticles.svelte';
 
-  const API_BASE = 'http://localhost:8000';
+  // Use the same origin as the current page when served by FastAPI
+  const API_BASE = typeof window !== 'undefined' 
+    ? window.location.origin
+    : 'http://localhost:8765';
 
   let searchQuery = '';
   let currentParticle = null;

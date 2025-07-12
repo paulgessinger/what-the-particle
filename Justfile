@@ -8,3 +8,11 @@ test-all:
 
 lint:
     uv run --frozen pre-commit run --all-files
+
+[working-directory: "frontend"]
+frontend:
+  npm install
+  npm run build
+
+run:
+    uv run fastapi dev backend/main.py --port 8765
