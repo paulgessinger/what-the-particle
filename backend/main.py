@@ -227,6 +227,12 @@ async def get_popular_particles() -> dict[str, list[dict[str, Any]]]:
 @app.get("/{path:path}")
 async def serve_frontend(path: str) -> Any:
     """Serve the frontend application for all unmatched routes"""
+    # Don't serve frontend for API routes - let FastAPI return proper 404s
+    api_prefixes = ["particle", "search", "popular", "docs", "openapi.json", "redoc"]
+    if any(path.startswith(prefix) for prefix in api_prefixes):
+        # Let FastAPI handle API routes with proper error responses
+        raise HTTPException(status_code=404, detail="Not found")
+    
     if static_dir:
         # Check if the requested file exists
         file_path = static_dir / path

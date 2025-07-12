@@ -181,8 +181,17 @@ class TestAPIPerformance:
 
     def test_edge_case_searches(self, client):
         """Test search with edge cases."""
-        edge_cases = ["", "a", "xyz123", "π", "μ"]
+        # Test empty search (uses different endpoint)
+        response = client.get("/search")
+        assert response.status_code == 200
+        data = response.json()
+        assert "particles" in data
+        assert "total" in data
+        assert isinstance(data["particles"], list)
+        assert isinstance(data["total"], int)
 
+        # Test other edge cases
+        edge_cases = ["a", "xyz123", "π", "μ"]
         for query in edge_cases:
             response = client.get(f"/search/{query}")
             # Should handle all queries gracefully
@@ -200,18 +209,24 @@ class TestErrorRecovery:
 
     def test_malformed_requests_handled_gracefully(self, client):
         """Test that malformed requests don't crash the server."""
-        # Test various malformed requests
-        malformed_urls = [
+        # Test various malformed API requests (these should return error codes)
+        malformed_api_urls = [
             "/particle/",
             "/particle/abc",
             "/particle/999999999999999999999",
-            "/nonexistent_endpoint",
         ]
 
-        for url in malformed_urls:
+        for url in malformed_api_urls:
             response = client.get(url)
             # Should return error status, not crash
             assert response.status_code in [400, 404, 422, 500]
+
+        # Test non-API routes (these should serve frontend for SPA routing)
+        non_api_urls = ["/nonexistent_endpoint", "/some/frontend/route"]
+        for url in non_api_urls:
+            response = client.get(url)
+            # Should serve frontend (200) or return 404, but not crash
+            assert response.status_code in [200, 404]
 
     def test_concurrent_access_simulation(self, client):
         """Simulate concurrent access to test thread safety."""
