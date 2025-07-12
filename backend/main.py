@@ -1,16 +1,16 @@
+import math
+from pathlib import Path
+from typing import Any
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-import particle
+from fastapi.staticfiles import StaticFiles
 from particle import Particle
-import math
-import os
-from pathlib import Path
+from pydantic import BaseModel
 
-def safe_float(value):
+
+def safe_float(value: Any) -> float | None:
     """Convert value to float, return None if inf, -inf, or NaN"""
     if value is None:
         return None
@@ -55,7 +55,7 @@ for dir_path in possible_static_dirs:
 if static_dir:
     # Mount static files (CSS, JS, images, etc.)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    
+
     # Serve SvelteKit app files
     if (static_dir / "_app").exists():
         app.mount("/_app", StaticFiles(directory=static_dir / "_app"), name="svelte_app")
@@ -64,37 +64,37 @@ class ParticleInfo(BaseModel):
     pdgid: int
     name: str
     latex_name: str
-    mass: Optional[float]
-    mass_upper: Optional[float]
-    mass_lower: Optional[float]
-    width: Optional[float]
-    width_upper: Optional[float]
-    width_lower: Optional[float]
-    charge: Optional[float]
-    three_charge: Optional[int]
-    spin: Optional[float]
-    parity: Optional[int]
-    c_parity: Optional[int]
-    g_parity: Optional[int]
-    anti_particle_pdgid: Optional[int]
-    status: Optional[str]
-    lifetime: Optional[float]
-    ctau: Optional[float]
+    mass: float | None
+    mass_upper: float | None
+    mass_lower: float | None
+    width: float | None
+    width_upper: float | None
+    width_lower: float | None
+    charge: float | None
+    three_charge: int | None
+    spin: float | None
+    parity: int | None
+    c_parity: int | None
+    g_parity: int | None
+    anti_particle_pdgid: int | None
+    status: str | None
+    lifetime: float | None
+    ctau: float | None
 
 class SearchResult(BaseModel):
-    particles: List[Dict[str, Any]]
+    particles: list[dict[str, Any]]
     total: int
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"message": "Particle Information API", "version": "1.0.0"}
 
 @app.get("/particle/{pdgid}", response_model=ParticleInfo)
-async def get_particle_by_pdgid(pdgid: int):
+async def get_particle_by_pdgid(pdgid: int) -> ParticleInfo:
     """Get detailed particle information by PDG ID"""
     try:
         p = Particle.from_pdgid(pdgid)
-        
+
         return ParticleInfo(
             pdgid=int(p.pdgid),
             name=p.name,
@@ -117,23 +117,23 @@ async def get_particle_by_pdgid(pdgid: int):
             ctau=safe_float(getattr(p, 'ctau', None))
         )
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Particle with PDG ID {pdgid} not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"Particle with PDG ID {pdgid} not found: {str(e)}") from e
 
 @app.get("/search", response_model=SearchResult)
-async def search_particles_empty(limit: int = 10):
+async def search_particles_empty(limit: int = 10) -> SearchResult:
     """Handle empty search query"""
     return SearchResult(particles=[], total=0)
 
 @app.get("/search/{query}", response_model=SearchResult)
-async def search_particles(query: str, limit: int = 10):
+async def search_particles(query: str, limit: int = 10) -> SearchResult:
     """Search for particles by name"""
     try:
         matching_particles = []
-        
+
         # Handle empty query
         if not query.strip():
             return SearchResult(particles=[], total=0)
-        
+
         # Use a simple approach: test common particles first for the query
         common_pdgids = [
             11, -11, 13, -13, 22, 111, 211, -211, 321, -321,
@@ -142,15 +142,15 @@ async def search_particles(query: str, limit: int = 10):
             15, -15, 12, -12, 14, -14, 16, -16,
             130, 310, 311, -311, 313, -313, 323, -323,
         ]
-        
+
         query_lower = query.lower()
-        
+
         for pdgid in common_pdgids:
             try:
                 p = Particle.from_pdgid(pdgid)
                 name_lower = p.name.lower()
                 latex_name_lower = getattr(p, 'latex_name', p.name).lower()
-                
+
                 # Check if query matches name or common name patterns
                 matches = (
                     query_lower in name_lower or
@@ -162,7 +162,7 @@ async def search_particles(query: str, limit: int = 10):
                     (query_lower == "photon" and name_lower == "gamma") or
                     (query_lower == "pion" and "pi" in name_lower)
                 )
-                
+
                 if matches:
                     particle_dict = {
                         "pdgid": int(p.pdgid),
@@ -172,19 +172,19 @@ async def search_particles(query: str, limit: int = 10):
                         "charge": safe_float(p.charge),
                     }
                     matching_particles.append(particle_dict)
-                    
+
                     if len(matching_particles) >= limit:
                         break
-            except:
+            except Exception:
                 # Skip particles that can't be loaded
                 continue
-        
+
         return SearchResult(particles=matching_particles, total=len(matching_particles))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}") from e
 
 @app.get("/popular")
-async def get_popular_particles():
+async def get_popular_particles() -> dict[str, list[dict[str, Any]]]:
     """Get a list of commonly searched particles"""
     popular_pdgids = [
         11,    # electron
@@ -206,7 +206,7 @@ async def get_popular_particles():
         5,     # bottom quark
         6,     # top quark
     ]
-    
+
     particles = []
     for pdgid in popular_pdgids:
         try:
@@ -218,26 +218,26 @@ async def get_popular_particles():
                 "mass": safe_float(p.mass),
                 "charge": safe_float(p.charge),
             })
-        except:
+        except Exception:
             continue
-    
+
     return {"particles": particles}
 
 # Catch-all route to serve the frontend for SPA routing
 @app.get("/{path:path}")
-async def serve_frontend(path: str):
+async def serve_frontend(path: str) -> Any:
     """Serve the frontend application for all unmatched routes"""
     if static_dir:
         # Check if the requested file exists
         file_path = static_dir / path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
-        
+
         # For SPA routing, serve index.html for any path that doesn't exist
         index_path = static_dir / "index.html"
         if index_path.exists():
             return FileResponse(index_path)
-    
+
     # If no static files are available, return a simple message
     return {"message": "Frontend not built yet. Run 'npm run build' in the frontend directory."}
 

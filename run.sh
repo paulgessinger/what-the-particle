@@ -27,18 +27,19 @@ trap cleanup SIGINT SIGTERM
 
 # Check and install backend dependencies
 echo "📦 Checking backend dependencies..."
-cd backend
-if [ ! -d "venv" ]; then
-    echo "🔧 Creating virtual environment..."
-    python3 -m venv venv
+cd ..
+if ! command -v uv &> /dev/null; then
+    echo "🔧 Installing uv package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
-source venv/bin/activate
-pip install -r requirements.txt > /dev/null 2>&1
+echo "🔧 Installing Python dependencies with uv..."
+uv sync > /dev/null 2>&1
 
 # Start backend server
 echo "🐍 Starting FastAPI backend on http://localhost:8000..."
-python main.py &
+uv run python -m backend.main &
 BACKEND_PID=$!
 
 # Give backend time to start

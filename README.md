@@ -50,11 +50,12 @@ A modern web application for exploring particle physics data using PDG IDs. Buil
 
    **Option B: Using pip with virtual environment**
    ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   python main.py
+   # Install uv if not already installed
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Install dependencies and run
+   uv sync
+   uv run python -m backend.main
    ```
 
 3. **Frontend Setup**
@@ -79,9 +80,8 @@ chmod +x run.sh
 
 Terminal 1 (Backend):
 ```bash
-cd backend
-python main.py
-# Or with uv: uv run python -m backend.main
+# Using uv (recommended)
+uv run python -m backend.main
 ```
 
 Terminal 2 (Frontend):
@@ -107,9 +107,7 @@ For production, the backend serves both the API and the built frontend from a si
 2. **Run the Backend (which now serves static files)**
    ```bash
    # The backend will automatically serve the built frontend
-   cd backend
-   python main.py
-   # Or with uv: uv run python -m backend.main
+   uv run python -m backend.main
    ```
 
 3. **Access the Application**
@@ -205,6 +203,33 @@ Search for particles by name (partial matching).
 
 **Example**: `/search/electron` finds electron-related particles
 
+## Continuous Integration
+
+The project includes a comprehensive CI pipeline with the following jobs:
+
+### CI Jobs
+
+1. **Python Tests** - Tests the backend code across Python 3.10, 3.11, and 3.12
+   - Runs linting with `ruff`
+   - Runs type checking with `mypy`
+   - Runs all tests with `pytest` and coverage reporting
+
+2. **Docker Build Test** - Verifies the Docker image builds and runs correctly
+   - Builds the multi-stage Docker image
+   - Tests that the application responds on expected endpoints
+
+3. **Frontend Build Test** - Verifies the frontend builds correctly
+   - Installs Node.js dependencies
+   - Builds the SvelteKit application
+   - Verifies build output structure
+
+4. **Integration Test** - Tests the full application stack
+   - Builds both frontend and backend
+   - Starts the backend server
+   - Runs integration tests against the running application
+
+All CI jobs use `uv` for Python dependency management, ensuring fast and reliable builds.
+
 ## Development
 
 ### Project Structure
@@ -213,7 +238,6 @@ Search for particles by name (partial matching).
 particle-explorer/
 ├── backend/
 │   ├── main.py              # FastAPI application
-│   ├── requirements.txt     # Python dependencies
 │   └── __init__.py
 ├── frontend/
 │   ├── src/                 # SvelteKit source code
