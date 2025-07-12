@@ -51,6 +51,7 @@ WORKDIR /app
 
 # Copy Python configuration files
 COPY pyproject.toml ./
+COPY uv.lock ./
 COPY README.md ./
 
 # Copy backend source code
