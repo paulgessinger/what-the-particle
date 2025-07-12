@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from particle import Particle
 from pydantic import BaseModel
+from thefuzz import fuzz, process
 import logging
 
 
@@ -24,11 +25,76 @@ def safe_float(value: Any) -> float | None:
         return None
 
 
+# Global variables for particle search
+PARTICLE_NAME_MAP = {}
+PARTICLE_SEARCH_LIST = []
+
 app = FastAPI(
     title="Particle Information API",
     description="Get information about particles using PDG IDs",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+async def precompute_particle_data():
+    """Precompute particle search data for better performance"""
+    global PARTICLE_NAME_MAP, PARTICLE_SEARCH_LIST
+    
+    try:
+        # Get all particles from the PDG database
+        all_particles = Particle.all()
+        
+        # Build name mapping and search list
+        for particle in all_particles:
+            try:
+                # Store particle by its name
+                PARTICLE_NAME_MAP[particle.name.lower()] = particle
+                
+                # Also store by pdg_name if different
+                if particle.pdg_name.lower() != particle.name.lower():
+                    PARTICLE_NAME_MAP[particle.pdg_name.lower()] = particle
+                    
+                # Add to search list for fuzzy matching
+                PARTICLE_SEARCH_LIST.append((particle.name, particle))
+                if particle.pdg_name != particle.name:
+                    PARTICLE_SEARCH_LIST.append((particle.pdg_name, particle))
+                    
+                # Add common aliases
+                name_lower = particle.name.lower()
+                if name_lower == 'e-':
+                    PARTICLE_NAME_MAP['electron'] = particle
+                elif name_lower == 'e+':
+                    PARTICLE_NAME_MAP['positron'] = particle
+                elif name_lower == 'mu-':
+                    PARTICLE_NAME_MAP['muon'] = particle
+                elif name_lower == 'mu+':
+                    PARTICLE_NAME_MAP['antimuon'] = particle
+                elif name_lower == 'p':
+                    PARTICLE_NAME_MAP['proton'] = particle
+                elif name_lower == 'p~':
+                    PARTICLE_NAME_MAP['antiproton'] = particle
+                elif name_lower == 'n':
+                    PARTICLE_NAME_MAP['neutron'] = particle
+                elif name_lower == 'n~':
+                    PARTICLE_NAME_MAP['antineutron'] = particle
+                elif name_lower == 'gamma':
+                    PARTICLE_NAME_MAP['photon'] = particle
+                elif 'pi' in name_lower:
+                    PARTICLE_NAME_MAP[f'pion{name_lower.replace("pi", "")}'] = particle
+                elif 'tau-' in name_lower:
+                    PARTICLE_NAME_MAP['tau'] = particle
+                elif 'tau+' in name_lower:
+                    PARTICLE_NAME_MAP['antitau'] = particle
+                    
+            except Exception:
+                continue
+                
+        logging.info(f"Loaded {len(PARTICLE_NAME_MAP)} particle name mappings")
+        logging.info(f"Built search list with {len(PARTICLE_SEARCH_LIST)} entries")
+        
+    except Exception as e:
+        logging.error(f"Failed to precompute particle data: {e}")
 
 # Enable CORS for frontend communication
 app.add_middleware(
@@ -139,103 +205,102 @@ async def search_particles_empty(limit: int = 10) -> SearchResult:
     return SearchResult(particles=[], total=0)
 
 
+def create_particle_dict(particle: Particle) -> dict[str, Any]:
+    """Helper function to create a particle dictionary"""
+    return {
+        "pdgid": int(particle.pdgid),
+        "name": particle.name,
+        "latex_name": getattr(particle, "latex_name", particle.name),
+        "mass": safe_float(particle.mass),
+        "charge": safe_float(particle.charge),
+    }
+
+
 @app.get("/search/{query}", response_model=SearchResult)
 async def search_particles(query: str, limit: int = 10) -> SearchResult:
-    """Search for particles by name"""
+    """Search for particles by name or PDG ID using fuzzy matching"""
     try:
-        matching_particles = []
-
         # Handle empty query
         if not query.strip():
             return SearchResult(particles=[], total=0)
 
-        # Use a simple approach: test common particles first for the query
-        common_pdgids = [
-            11,
-            -11,
-            13,
-            -13,
-            22,
-            111,
-            211,
-            -211,
-            321,
-            -321,
-            2212,
-            -2212,
-            2112,
-            -2112,
-            3122,
-            -3122,
-            3112,
-            -3112,
-            1,
-            -1,
-            2,
-            -2,
-            3,
-            -3,
-            4,
-            -4,
-            5,
-            -5,
-            6,
-            -6,
-            15,
-            -15,
-            12,
-            -12,
-            14,
-            -14,
-            16,
-            -16,
-            130,
-            310,
-            311,
-            -311,
-            313,
-            -313,
-            323,
-            -323,
-        ]
+        query_lower = query.strip().lower()
+        matching_particles = []
+        seen_pdgids = set()
 
-        query_lower = query.lower()
-
-        for pdgid in common_pdgids:
+        # Check if query is numeric (PDG ID search)
+        try:
+            pdg_id = int(query_lower)
             try:
-                p = Particle.from_pdgid(pdgid)
-                name_lower = p.name.lower()
-                latex_name_lower = getattr(p, "latex_name", p.name).lower()
+                p = Particle.from_pdgid(pdg_id)
+                particle_dict = create_particle_dict(p)
+                return SearchResult(particles=[particle_dict], total=1)
+            except Exception:
+                pass
+        except ValueError:
+            pass
 
-                # Check if query matches name or common name patterns
-                matches = (
-                    query_lower in name_lower
-                    or query_lower in latex_name_lower
-                    or (query_lower == "electron" and name_lower in ["e-", "e+"])
-                    or (query_lower == "muon" and name_lower.startswith("mu"))
-                    or (query_lower == "proton" and name_lower == "p")
-                    or (query_lower == "neutron" and name_lower == "n")
-                    or (query_lower == "photon" and name_lower == "gamma")
-                    or (query_lower == "pion" and "pi" in name_lower)
-                )
+        # 1. Exact name matches first
+        if query_lower in PARTICLE_NAME_MAP:
+            particle = PARTICLE_NAME_MAP[query_lower]
+            if particle.pdgid not in seen_pdgids:
+                matching_particles.append(create_particle_dict(particle))
+                seen_pdgids.add(particle.pdgid)
 
-                if matches:
-                    particle_dict = {
-                        "pdgid": int(p.pdgid),
-                        "name": p.name,
-                        "latex_name": getattr(p, "latex_name", p.name),
-                        "mass": safe_float(p.mass),
-                        "charge": safe_float(p.charge),
-                    }
-                    matching_particles.append(particle_dict)
+        # 2. Substring matches in our precomputed names
+        for name, particle in PARTICLE_NAME_MAP.items():
+            if query_lower in name and particle.pdgid not in seen_pdgids:
+                matching_particles.append(create_particle_dict(particle))
+                seen_pdgids.add(particle.pdgid)
+                
+                if len(matching_particles) >= limit:
+                    break
 
+        # 3. If we don't have enough matches, use fuzzy matching
+        if len(matching_particles) < limit:
+            # Extract just the names for fuzzy matching
+            search_names = [name for name, _ in PARTICLE_SEARCH_LIST]
+            
+            # Get fuzzy matches
+            fuzzy_matches = process.extract(
+                query_lower, 
+                search_names, 
+                limit=limit * 2,  # Get more to account for duplicates
+                scorer=fuzz.partial_ratio
+            )
+            
+            # Add fuzzy matches that aren't already included
+            for matched_name, score in fuzzy_matches:
+                if score >= 60:  # Minimum similarity threshold
+                    # Find the particle for this name
+                    for name, particle in PARTICLE_SEARCH_LIST:
+                        if name == matched_name and particle.pdgid not in seen_pdgids:
+                            matching_particles.append(create_particle_dict(particle))
+                            seen_pdgids.add(particle.pdgid)
+                            break
+                    
                     if len(matching_particles) >= limit:
                         break
-            except Exception:
-                # Skip particles that can't be loaded
-                continue
 
-        return SearchResult(particles=matching_particles, total=len(matching_particles))
+        # 4. If still not enough, try the particle library's findall
+        if len(matching_particles) < limit:
+            try:
+                particle_results = Particle.findall(query_lower)
+                for particle in particle_results:
+                    if particle.pdgid not in seen_pdgids:
+                        matching_particles.append(create_particle_dict(particle))
+                        seen_pdgids.add(particle.pdgid)
+                        
+                        if len(matching_particles) >= limit:
+                            break
+            except Exception:
+                pass
+
+        return SearchResult(
+            particles=matching_particles[:limit], 
+            total=len(matching_particles)
+        )
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}") from e
 

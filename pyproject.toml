@@ -28,6 +28,8 @@ dependencies = [
     "particle>=0.24.0",
     "pydantic>=2.10.0",
     "python-multipart>=0.0.19",
+    "thefuzz>=0.22.1",
+    "python-levenshtein>=0.27.1",
 ]
 
 

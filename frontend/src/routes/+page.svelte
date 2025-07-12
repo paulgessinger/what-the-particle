@@ -24,6 +24,20 @@
     } catch (err) {
       console.error('Failed to load popular particles:', err);
     }
+
+    // Check URL parameters for deep linking
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const particleId = urlParams.get('particle');
+      
+      if (particleId) {
+        const pdgId = parseInt(particleId);
+        if (!isNaN(pdgId)) {
+          searchQuery = particleId;
+          await searchParticle(pdgId);
+        }
+      }
+    }
   });
 
   async function searchParticle(pdgId) {
@@ -35,6 +49,13 @@
     try {
       const response = await axios.get(`${API_BASE}/particle/${pdgId}`);
       currentParticle = response.data;
+      
+      // Update URL with the particle ID
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location);
+        url.searchParams.set('particle', pdgId);
+        window.history.pushState({}, '', url);
+      }
     } catch (err) {
       error = err.response?.data?.detail || 'Failed to fetch particle data';
       currentParticle = null;
@@ -43,9 +64,37 @@
     }
   }
 
+  async function searchParticleByText(query) {
+    if (!query) return;
+
+    loading = true;
+    error = null;
+
+    try {
+      const response = await axios.get(`${API_BASE}/search/${encodeURIComponent(query)}`);
+      const results = response.data.particles;
+      
+      if (results.length > 0) {
+        // If we get results, show the first one
+        await searchParticle(results[0].pdgid);
+      } else {
+        error = `No particles found matching "${query}"`;
+        currentParticle = null;
+      }
+    } catch (err) {
+      error = err.response?.data?.detail || 'Failed to search particles';
+      currentParticle = null;
+    } finally {
+      loading = false;
+    }
+  }
+
   function handleSearch(event) {
-    const pdgId = event.detail.pdgId;
-    searchParticle(pdgId);
+    if (event.detail.pdgId) {
+      searchParticle(event.detail.pdgId);
+    } else if (event.detail.textQuery) {
+      searchParticleByText(event.detail.textQuery);
+    }
   }
 
   function handlePopularParticleClick(particle) {
@@ -120,7 +169,7 @@
             </div>
           </div>
         {:else if currentParticle}
-          <ParticleCard particle={currentParticle} />
+          <ParticleCard particle={currentParticle} on:antiparticleClick={(e) => searchParticle(e.detail.pdgid)} />
         {:else}
           <div class="card text-center py-12">
             <div class="text-6xl mb-4">🔍</div>

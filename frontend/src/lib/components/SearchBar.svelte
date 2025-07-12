@@ -7,11 +7,19 @@
   const dispatch = createEventDispatcher();
 
   function handleSubmit() {
-    const pdgId = parseInt(searchQuery.trim());
-    if (isNaN(pdgId)) {
+    const query = searchQuery.trim();
+    if (!query) {
       return;
     }
-    dispatch('search', { pdgId });
+    
+    // Check if it's a numeric PDG ID
+    const pdgId = parseInt(query);
+    if (!isNaN(pdgId)) {
+      dispatch('search', { pdgId });
+    } else {
+      // Text search
+      dispatch('search', { textQuery: query });
+    }
   }
 
   function handleKeydown(event) {
@@ -20,7 +28,7 @@
     }
   }
 
-  $: isValidPdgId = searchQuery.trim() !== '' && !isNaN(parseInt(searchQuery.trim()));
+  $: isValidSearch = searchQuery.trim() !== '';
 </script>
 
 <div class="w-full">
@@ -35,7 +43,7 @@
       type="text"
       bind:value={searchQuery}
       on:keydown={handleKeydown}
-      placeholder="Enter PDG ID (e.g., 11 for electron, 2212 for proton)"
+      placeholder="Enter particle name or PDG ID (e.g., 'electron', 'muon', or '11', '2212')"
       class="input-field pl-12 pr-24 text-lg h-14"
       disabled={loading}
     />
@@ -43,7 +51,7 @@
     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
       <button
         on:click={handleSubmit}
-        disabled={!isValidPdgId || loading}
+        disabled={!isValidSearch || loading}
         class="btn-primary px-6 h-10 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
       >
         {#if loading}
@@ -59,17 +67,15 @@
     </div>
   </div>
 
-  {#if searchQuery.trim() !== '' && !isValidPdgId}
-    <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid numeric PDG ID</p>
-  {/if}
 
   <div class="mt-4 text-center">
     <p class="text-sm text-gray-500 dark:text-gray-400">
-      Don't know PDG IDs? Try some examples:
+      Try searching by name:
+      <button on:click={() => {searchQuery = 'electron'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">electron</button>,
+      <button on:click={() => {searchQuery = 'muon'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">muon</button>,
+      <button on:click={() => {searchQuery = 'proton'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">proton</button>, or by PDG ID:
       <button on:click={() => {searchQuery = '11'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">11</button>,
-      <button on:click={() => {searchQuery = '2212'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">2212</button>,
-      <button on:click={() => {searchQuery = '22'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">22</button>, or
-      <button on:click={() => {searchQuery = '211'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">211</button>
+      <button on:click={() => {searchQuery = '2212'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">2212</button>
     </p>
   </div>
 </div>
