@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import LaTeX from './LaTeX.svelte';
   
   export let particle;
   
@@ -58,7 +59,9 @@
       <div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{particle.name}</h2>
         {#if particle.latex_name && particle.latex_name !== particle.name}
-          <p class="text-lg text-gray-600 dark:text-gray-400 font-mono">{particle.latex_name}</p>
+          <div class="text-lg text-gray-600 dark:text-gray-400 mt-1">
+            <LaTeX math={particle.latex_name} className="text-lg" />
+          </div>
         {/if}
         <span class="particle-badge particle-{particleType} mt-2">
           {particleType.charAt(0).toUpperCase() + particleType.slice(1)}

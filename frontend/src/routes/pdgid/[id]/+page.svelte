@@ -1,9 +1,11 @@
 <script>
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import axios from 'axios';
-  import SearchBar from '../lib/components/SearchBar.svelte';
-  import PopularParticles from '../lib/components/PopularParticles.svelte';
+  import ParticleCard from '../../../lib/components/ParticleCard.svelte';
+  import SearchBar from '../../../lib/components/SearchBar.svelte';
+  import PopularParticles from '../../../lib/components/PopularParticles.svelte';
 
   // Use the same origin as the current page when served by FastAPI
   const API_BASE = typeof window !== 'undefined' 
@@ -11,9 +13,13 @@
     : 'http://localhost:8765';
 
   let searchQuery = '';
+  let currentParticle = null;
   let loading = false;
   let error = null;
   let popularParticles = [];
+
+  // Get the particle ID from the URL parameter
+  $: particleId = $page.params.id;
 
   onMount(async () => {
     // Load popular particles on mount
@@ -23,13 +29,38 @@
     } catch (err) {
       console.error('Failed to load popular particles:', err);
     }
+
+    // Load the particle based on the URL parameter
+    if (particleId) {
+      const pdgId = parseInt(particleId);
+      if (!isNaN(pdgId)) {
+        searchQuery = particleId;
+        await searchParticle(pdgId);
+      } else {
+        error = `Invalid particle ID: ${particleId}`;
+      }
+    }
   });
 
-  function handleSearch(event) {
-    if (event.detail.pdgId) {
-      goto(`/pdgid/${event.detail.pdgId}`);
-    } else if (event.detail.textQuery) {
-      searchParticleByText(event.detail.textQuery);
+  async function searchParticle(pdgId) {
+    if (!pdgId) return;
+
+    loading = true;
+    error = null;
+
+    try {
+      const response = await axios.get(`${API_BASE}/particle/${pdgId}`);
+      currentParticle = response.data;
+      
+      // Update URL if needed (but don't cause infinite loop)
+      if (particleId !== pdgId.toString()) {
+        goto(`/pdgid/${pdgId}`, { replaceState: true });
+      }
+    } catch (err) {
+      error = err.response?.data?.detail || 'Failed to fetch particle data';
+      currentParticle = null;
+    } finally {
+      loading = false;
     }
   }
 
@@ -48,11 +79,21 @@
         goto(`/pdgid/${results[0].pdgid}`);
       } else {
         error = `No particles found matching "${query}"`;
-        loading = false;
+        currentParticle = null;
       }
     } catch (err) {
       error = err.response?.data?.detail || 'Failed to search particles';
+      currentParticle = null;
+    } finally {
       loading = false;
+    }
+  }
+
+  function handleSearch(event) {
+    if (event.detail.pdgId) {
+      goto(`/pdgid/${event.detail.pdgId}`);
+    } else if (event.detail.textQuery) {
+      searchParticleByText(event.detail.textQuery);
     }
   }
 
@@ -60,10 +101,14 @@
     searchQuery = particle.pdgid.toString();
     goto(`/pdgid/${particle.pdgid}`);
   }
+
+  function handleAntiparticleClick(event) {
+    goto(`/pdgid/${event.detail.pdgid}`);
+  }
 </script>
 
 <svelte:head>
-  <title>Particle Explorer - Discover Fundamental Particles</title>
+  <title>{currentParticle ? `${currentParticle.name} (PDG ID ${currentParticle.pdgid}) - Particle Explorer` : 'Particle Explorer - Discover Fundamental Particles'}</title>
   <meta name="description" content="Explore the world of particle physics. Search for particles by PDG ID and discover their properties, masses, charges, and more." />
 </svelte:head>
 
@@ -127,6 +172,8 @@
               </div>
             </div>
           </div>
+        {:else if currentParticle}
+          <ParticleCard particle={currentParticle} on:antiparticleClick={handleAntiparticleClick} />
         {:else}
           <div class="card text-center py-12">
             <div class="text-6xl mb-4">🔍</div>
