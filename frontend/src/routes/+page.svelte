@@ -67,15 +67,15 @@
   <meta name="description" content="Explore the world of particle physics. Search for particles by PDG ID and discover their properties, masses, charges, and more." />
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
   <!-- Hero Section -->
   <div class="relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
       <div class="text-center">
-        <h1 class="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 animate-fade-in">
+        <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6 animate-fade-in">
           Explore the <span class="bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">Quantum Universe</span>
         </h1>
-        <p class="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto animate-fade-in">
+        <p class="text-xl text-gray-600 mb-12 max-w-3xl mx-auto animate-fade-in">
           Discover fundamental particles using PDG IDs. Search through the complete database of quarks, leptons, bosons, and more with detailed physics properties.
         </p>
 
@@ -111,10 +111,10 @@
         {#if loading}
           <div class="card text-center py-12">
             <div class="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-gray-600 dark:text-gray-400">Searching particle database...</p>
+            <p class="text-gray-600">Searching particle database...</p>
           </div>
         {:else if error}
-          <div class="card border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+          <div class="card border-red-200 bg-red-50">
             <div class="flex items-center space-x-3">
               <div class="flex-shrink-0">
                 <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,17 +122,17 @@
                 </svg>
               </div>
               <div>
-                <h3 class="text-lg font-medium text-red-800 dark:text-red-200">Particle Not Found</h3>
-                <p class="text-red-600 dark:text-red-300">{error}</p>
+                <h3 class="text-lg font-medium text-red-800">Particle Not Found</h3>
+                <p class="text-red-600">{error}</p>
               </div>
             </div>
           </div>
         {:else}
           <div class="card text-center py-12">
             <div class="text-6xl mb-4">🔍</div>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Search for a Particle</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">Enter a PDG ID above to discover detailed particle information</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Search for a Particle</h3>
+            <p class="text-gray-600 mb-6">Enter a PDG ID above to discover detailed particle information</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500">
               <div>
                 <span class="font-medium">Examples:</span>
               </div>

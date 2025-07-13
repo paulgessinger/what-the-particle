@@ -69,7 +69,7 @@
 
 
   <div class="mt-4 text-center">
-    <p class="text-sm text-gray-500 dark:text-gray-400">
+    <p class="text-sm text-gray-500">
       Try searching by name:
       <button on:click={() => {searchQuery = 'electron'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">electron</button>,
       <button on:click={() => {searchQuery = 'muon'; handleSubmit();}} class="text-primary-600 hover:text-primary-700 font-medium">muon</button>,

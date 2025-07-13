@@ -60,32 +60,74 @@ async def precompute_particle_data():
                 if particle.pdg_name != particle.name:
                     PARTICLE_SEARCH_LIST.append((particle.pdg_name, particle))
                     
-                # Add common aliases
+                # Add common aliases - use PDG ID to ensure we get the right particle
                 name_lower = particle.name.lower()
-                if name_lower == 'e-':
+                pdgid = particle.pdgid
+                
+                # Specific mappings based on PDG ID to avoid conflicts
+                if pdgid == 11:  # electron
                     PARTICLE_NAME_MAP['electron'] = particle
-                elif name_lower == 'e+':
+                elif pdgid == -11:  # positron
                     PARTICLE_NAME_MAP['positron'] = particle
-                elif name_lower == 'mu-':
+                elif pdgid == 13:  # muon
                     PARTICLE_NAME_MAP['muon'] = particle
-                elif name_lower == 'mu+':
+                elif pdgid == -13:  # antimuon
                     PARTICLE_NAME_MAP['antimuon'] = particle
-                elif name_lower == 'p':
+                elif pdgid == 2212:  # proton
                     PARTICLE_NAME_MAP['proton'] = particle
-                elif name_lower == 'p~':
+                elif pdgid == -2212:  # antiproton
                     PARTICLE_NAME_MAP['antiproton'] = particle
-                elif name_lower == 'n':
+                elif pdgid == 2112:  # neutron
                     PARTICLE_NAME_MAP['neutron'] = particle
-                elif name_lower == 'n~':
+                elif pdgid == -2112:  # antineutron
                     PARTICLE_NAME_MAP['antineutron'] = particle
-                elif name_lower == 'gamma':
+                elif pdgid == 22:  # photon
                     PARTICLE_NAME_MAP['photon'] = particle
+                elif pdgid == 15:  # tau
+                    PARTICLE_NAME_MAP['tau'] = particle
+                elif pdgid == -15:  # antitau
+                    PARTICLE_NAME_MAP['antitau'] = particle
+                # Quarks
+                elif pdgid == 1:  # down quark
+                    PARTICLE_NAME_MAP['down'] = particle
+                    PARTICLE_NAME_MAP['down quark'] = particle
+                elif pdgid == -1:  # anti-down quark
+                    PARTICLE_NAME_MAP['anti-down'] = particle
+                    PARTICLE_NAME_MAP['antidown'] = particle
+                elif pdgid == 2:  # up quark
+                    PARTICLE_NAME_MAP['up'] = particle
+                    PARTICLE_NAME_MAP['up quark'] = particle
+                elif pdgid == -2:  # anti-up quark
+                    PARTICLE_NAME_MAP['anti-up'] = particle
+                    PARTICLE_NAME_MAP['antiup'] = particle
+                elif pdgid == 3:  # strange quark
+                    PARTICLE_NAME_MAP['strange'] = particle
+                    PARTICLE_NAME_MAP['strange quark'] = particle
+                elif pdgid == -3:  # anti-strange quark
+                    PARTICLE_NAME_MAP['anti-strange'] = particle
+                    PARTICLE_NAME_MAP['antistrange'] = particle
+                elif pdgid == 4:  # charm quark
+                    PARTICLE_NAME_MAP['charm'] = particle
+                    PARTICLE_NAME_MAP['charm quark'] = particle
+                elif pdgid == -4:  # anti-charm quark
+                    PARTICLE_NAME_MAP['anti-charm'] = particle
+                    PARTICLE_NAME_MAP['anticharm'] = particle
+                elif pdgid == 5:  # bottom quark
+                    PARTICLE_NAME_MAP['bottom'] = particle
+                    PARTICLE_NAME_MAP['bottom quark'] = particle
+                    PARTICLE_NAME_MAP['beauty'] = particle
+                elif pdgid == -5:  # anti-bottom quark
+                    PARTICLE_NAME_MAP['anti-bottom'] = particle
+                    PARTICLE_NAME_MAP['antibottom'] = particle
+                    PARTICLE_NAME_MAP['anti-beauty'] = particle
+                elif pdgid == 6:  # top quark
+                    PARTICLE_NAME_MAP['top'] = particle
+                    PARTICLE_NAME_MAP['top quark'] = particle
+                elif pdgid == -6:  # anti-top quark
+                    PARTICLE_NAME_MAP['anti-top'] = particle
+                    PARTICLE_NAME_MAP['antitop'] = particle
                 elif 'pi' in name_lower:
                     PARTICLE_NAME_MAP[f'pion{name_lower.replace("pi", "")}'] = particle
-                elif 'tau-' in name_lower:
-                    PARTICLE_NAME_MAP['tau'] = particle
-                elif 'tau+' in name_lower:
-                    PARTICLE_NAME_MAP['antitau'] = particle
                     
             except Exception:
                 continue
@@ -138,6 +180,7 @@ if static_dir:
 class ParticleInfo(BaseModel):
     pdgid: int
     name: str
+    descriptive_name: str
     latex_name: str
     mass: float | None
     mass_upper: float | None
@@ -173,6 +216,7 @@ async def get_particle_by_pdgid(pdgid: int) -> ParticleInfo:
         return ParticleInfo(
             pdgid=int(p.pdgid),
             name=p.name,
+            descriptive_name=get_descriptive_name(p),
             latex_name=getattr(p, "latex_name", p.name),
             mass=safe_float(p.mass),
             mass_upper=safe_float(getattr(p, "mass_upper", None)),
@@ -205,11 +249,61 @@ async def search_particles_empty(limit: int = 10) -> SearchResult:
     return SearchResult(particles=[], total=0)
 
 
+def get_descriptive_name(particle: Particle) -> str:
+    """Get a more descriptive name for common particles"""
+    pdgid = int(particle.pdgid)
+    descriptive_names = {
+        11: "electron",
+        -11: "positron", 
+        13: "muon",
+        -13: "antimuon",
+        15: "tau lepton",
+        -15: "tau antilepton",
+        12: "electron neutrino",
+        -12: "electron antineutrino",
+        14: "muon neutrino", 
+        -14: "muon antineutrino",
+        16: "tau neutrino",
+        -16: "tau antineutrino",
+        22: "photon",
+        23: "Z boson",
+        24: "W+ boson",
+        -24: "W- boson",
+        25: "Higgs boson",
+        2212: "proton",
+        -2212: "antiproton",
+        2112: "neutron",
+        -2112: "antineutron",
+        211: "charged pion",
+        -211: "charged pion",
+        111: "neutral pion",
+        321: "charged kaon",
+        -321: "charged kaon",
+        311: "neutral kaon",
+        130: "neutral kaon (long)",
+        310: "neutral kaon (short)",
+        # Quarks
+        1: "down quark",
+        -1: "anti-down quark",
+        2: "up quark", 
+        -2: "anti-up quark",
+        3: "strange quark",
+        -3: "anti-strange quark",
+        4: "charm quark",
+        -4: "anti-charm quark",
+        5: "bottom quark",
+        -5: "anti-bottom quark",
+        6: "top quark",
+        -6: "anti-top quark",
+    }
+    return descriptive_names.get(pdgid, particle.name)
+
 def create_particle_dict(particle: Particle) -> dict[str, Any]:
     """Helper function to create a particle dictionary"""
     return {
         "pdgid": int(particle.pdgid),
         "name": particle.name,
+        "descriptive_name": get_descriptive_name(particle),
         "latex_name": getattr(particle, "latex_name", particle.name),
         "mass": safe_float(particle.mass),
         "charge": safe_float(particle.charge),
