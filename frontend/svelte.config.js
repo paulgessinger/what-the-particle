@@ -6,6 +6,9 @@ const config = {
 		adapter: adapter({
 			fallback: 'index.html'
 		}),
+		paths: {
+			base: process.env.NODE_ENV === 'production' ? '/what-the-particle' : ''
+		},
 		prerender: {
 			handleHttpError: ({ path, referrer, message }) => {
 				// ignore favicon and other static file errors

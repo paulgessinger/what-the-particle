@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import SearchBar from '../lib/components/SearchBar.svelte';
   import PopularParticles from '../lib/components/PopularParticles.svelte';
 
@@ -14,8 +15,8 @@
     // Load popular particles and name mapping on mount
     try {
       const [popularResponse, nameMappingResponse] = await Promise.all([
-        fetch('/particles/popular.json'),
-        fetch('/particles/name-mapping.json')
+        fetch(`${base}/particles/popular.json`),
+        fetch(`${base}/particles/name-mapping.json`)
       ]);
       
       if (popularResponse.ok) {
@@ -37,7 +38,7 @@
 
   function handleSearch(event) {
     if (event.detail.pdgId) {
-      goto(`/pdgid/${event.detail.pdgId}`);
+      goto(`${base}/pdgid/${event.detail.pdgId}`);
     } else if (event.detail.textQuery) {
       searchParticleByText(event.detail.textQuery);
     }
@@ -68,7 +69,7 @@
       
       if (pdgIds && pdgIds.length > 0) {
         // If we get results, navigate to the first one with search parameter
-        goto(`/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
+        goto(`${base}/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
       } else {
         error = `No particles found matching "${query}"`;
         loading = false;
@@ -84,7 +85,7 @@
     const searchTerm = particle.descriptive_name && particle.descriptive_name !== particle.name 
       ? particle.descriptive_name 
       : particle.pdgid.toString();
-    goto(`/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
+    goto(`${base}/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 </script>
 

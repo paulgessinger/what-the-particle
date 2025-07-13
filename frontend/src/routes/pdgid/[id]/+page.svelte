@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import ParticleCard from '../../../lib/components/ParticleCard.svelte';
   import SearchBar from '../../../lib/components/SearchBar.svelte';
   import PopularParticles from '../../../lib/components/PopularParticles.svelte';
@@ -42,8 +43,8 @@
     // Load popular particles and name mapping on mount
     try {
       const [popularResponse, nameMappingResponse] = await Promise.all([
-        fetch('/particles/popular.json'),
-        fetch('/particles/name-mapping.json')
+        fetch(`${base}/particles/popular.json`),
+        fetch(`${base}/particles/name-mapping.json`)
       ]);
       
       if (popularResponse.ok) {
@@ -70,14 +71,14 @@
     error = null;
 
     try {
-      const response = await fetch(`/particles/${pdgId}.json`);
+      const response = await fetch(`${base}/particles/${pdgId}.json`);
       
       if (response.ok) {
         currentParticle = await response.json();
         
         // Update URL if needed (but don't cause infinite loop)
         if (particleId !== pdgId.toString()) {
-          goto(`/pdgid/${pdgId}`, { replaceState: true });
+          goto(`${base}/pdgid/${pdgId}`, { replaceState: true });
         }
       } else if (response.status === 404) {
         error = `Particle with PDG ID ${pdgId} not found`;
@@ -119,7 +120,7 @@
       
       if (pdgIds && pdgIds.length > 0) {
         // If we get results, navigate to the first one with search parameter
-        goto(`/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
+        goto(`${base}/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
       } else {
         error = `No particles found matching "${query}"`;
         currentParticle = null;
@@ -134,7 +135,7 @@
 
   function handleSearch(event) {
     if (event.detail.pdgId) {
-      goto(`/pdgid/${event.detail.pdgId}`);
+      goto(`${base}/pdgid/${event.detail.pdgId}`);
     } else if (event.detail.textQuery) {
       searchParticleByText(event.detail.textQuery);
     }
@@ -145,13 +146,13 @@
     const searchTerm = particle.descriptive_name && particle.descriptive_name !== particle.name 
       ? particle.descriptive_name 
       : particle.pdgid.toString();
-    goto(`/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
+    goto(`${base}/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 
   function handleAntiparticleClick(event) {
     // Use antiparticle name if available, otherwise PDG ID
     const searchTerm = event.detail.name || event.detail.pdgid.toString();
-    goto(`/pdgid/${event.detail.pdgid}?search=${encodeURIComponent(searchTerm)}`);
+    goto(`${base}/pdgid/${event.detail.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 </script>
 
