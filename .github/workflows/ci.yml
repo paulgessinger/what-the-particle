@@ -46,6 +46,7 @@ jobs:
         # Verify build directory exists and has expected files
         ls -la build/
         [ -f "build/index.html" ] || exit 1
+        [ -f "build/404.html" ] || exit 1
         [ -d "build/_app" ] || exit 1
         [ -d "build/particles" ] || exit 1
         echo "Static site build successful!"

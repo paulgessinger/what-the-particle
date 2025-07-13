@@ -125,16 +125,8 @@
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Popular Particles Sidebar -->
-      <div class="lg:col-span-1">
-        <PopularParticles
-          particles={popularParticles}
-          on:particleClick={(e) => handlePopularParticleClick(e.detail)}
-        />
-      </div>
-
       <!-- Main Content Area -->
-      <div class="lg:col-span-2">
+      <div class="lg:col-span-2 lg:order-1 order-2">
         {#if loading}
           <div class="card text-center py-12">
             <div class="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -155,12 +147,12 @@
             </div>
           </div>
         {:else}
-          <div class="card text-center py-12">
-            <div class="text-6xl mb-4">🔍</div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Search for a Particle</h3>
-            <p class="text-gray-600 mb-6">Enter a PDG ID above to discover detailed particle information</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500">
-              <div>
+          <div class="card text-center py-8 md:py-12">
+            <div class="text-4xl md:text-6xl mb-3 md:mb-4">🔍</div>
+            <h3 class="text-lg md:text-xl font-semibold text-gray-900 mb-2">Search for a Particle</h3>
+            <p class="text-gray-600 mb-4 md:mb-6 text-sm md:text-base">Enter a PDG ID above to discover detailed particle information</p>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 text-xs md:text-sm text-gray-500">
+              <div class="md:col-span-1">
                 <span class="font-medium">Examples:</span>
               </div>
               <div>11 (electron)</div>
@@ -169,6 +161,14 @@
             </div>
           </div>
         {/if}
+      </div>
+
+      <!-- Popular Particles Sidebar -->
+      <div class="lg:col-span-1 lg:order-2 order-1 hidden lg:block">
+        <PopularParticles
+          particles={popularParticles}
+          on:particleClick={(e) => handlePopularParticleClick(e.detail)}
+        />
       </div>
     </div>
   </div>
