@@ -44,7 +44,7 @@
       bind:value={searchQuery}
       on:keydown={handleKeydown}
       placeholder="Enter particle name or PDG ID (e.g., 'electron', 'muon', or '11', '2212')"
-      class="input-field pl-12 pr-24 text-lg h-14"
+      class="input-field pl-12 pr-28 sm:pr-32 text-lg h-14"
       disabled={loading}
     />
 

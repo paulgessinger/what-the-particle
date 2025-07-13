@@ -1,12 +1,13 @@
 <script>
   import '../app.css';
+  import { base } from '$app/paths';
 </script>
 
 <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-16">
       <div class="flex items-center space-x-4">
-        <a href="/" class="flex items-center space-x-3">
+        <a href="{base || '/'}" class="flex items-center space-x-3">
           <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-lg">⚛</span>
           </div>

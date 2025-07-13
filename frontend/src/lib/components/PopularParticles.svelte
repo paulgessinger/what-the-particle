@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import LaTeX from './LaTeX.svelte';
 
   export let particles = [];
 
@@ -22,15 +23,42 @@
   }
 
   function formatMassShort(mass) {
-    if (mass === null || mass === undefined) return '';
-    if (mass === 0) return '0 MeV';
+    if (mass === null || mass === undefined) return { value: '', unit: '', isLatex: false };
+    if (mass === 0) return { value: '0', unit: 'MeV', isLatex: false };
+    
     if (Math.abs(mass) < 1) {
-      return `${(mass * 1000).toFixed(1)} keV`;
+      return { value: (mass * 1000).toFixed(1), unit: 'keV', isLatex: false };
     }
     if (Math.abs(mass) > 1000) {
-      return `${(mass / 1000).toFixed(1)} GeV`;
+      return { value: (mass / 1000).toFixed(1), unit: 'GeV', isLatex: false };
     }
-    return `${mass.toFixed(1)} MeV`;
+    return { value: mass.toFixed(1), unit: 'MeV', isLatex: false };
+  }
+
+  function formatCharge(charge, threeCharge) {
+    if (charge === null || charge === undefined) return '';
+    if (charge === 0) return '0';
+    
+    // Use three-charge parameter for exact fractional charges
+    if (threeCharge !== null && threeCharge !== undefined) {
+      const sign = threeCharge < 0 ? '-' : '';
+      const abs_three_charge = Math.abs(threeCharge);
+      
+      if (abs_three_charge === 1) {
+        return `${sign}\\frac{1}{3}`;
+      } else if (abs_three_charge === 2) {
+        return `${sign}\\frac{2}{3}`;
+      } else if (abs_three_charge === 3) {
+        return `${sign}1`;
+      } else if (abs_three_charge === 6) {
+        return `${sign}2`;
+      } else if (abs_three_charge === 9) {
+        return `${sign}3`;
+      }
+    }
+    
+    // For other values, round to reasonable precision
+    return charge.toFixed(3);
   }
 </script>
 
@@ -61,19 +89,19 @@
                   {particle.name}
                 </div>
                 <div class="text-xs text-gray-500 font-mono">
-                  PDG: {particle.pdgid}
+                  PDG: <LaTeX math={particle.pdgid.toString()} />
                 </div>
               </div>
             </div>
             <div class="text-right">
               {#if particle.mass !== null}
                 <div class="text-xs text-gray-600 font-mono">
-                  {formatMassShort(particle.mass)}
+                  <LaTeX math={formatMassShort(particle.mass).value} /> {formatMassShort(particle.mass).unit}
                 </div>
               {/if}
               {#if particle.charge !== null}
                 <div class="text-xs text-gray-500">
-                  Q: {particle.charge > 0 ? '+' : ''}{particle.charge}e
+                  Q: <LaTeX math={formatCharge(particle.charge, particle.three_charge)} />e
                 </div>
               {/if}
             </div>

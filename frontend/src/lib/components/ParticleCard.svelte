@@ -96,28 +96,93 @@
     return hasZeroWidth && hasInfiniteLifetime;
   }
 
-  function formatMass(mass) {
-    if (mass === null || mass === undefined) return 'Unknown';
-    if (mass === 0) return '0';
-    // Convert to scientific notation for very small or large numbers
-    if (Math.abs(mass) < 0.001 || Math.abs(mass) > 10000) {
-      return mass.toExponential(3);
+  function formatScientificLatex(value, precision = 3) {
+    if (value === null || value === undefined) return 'Unknown';
+    if (value === 0) return '0';
+    
+    const exp = value.toExponential(precision);
+    const match = exp.match(/^(-?\d\.?\d*)e([+-]?\d+)$/);
+    if (match) {
+      const [, mantissa, exponent] = match;
+      const cleanMantissa = parseFloat(mantissa).toString();
+      const cleanExponent = parseInt(exponent).toString();
+      return `${cleanMantissa} \\times 10^{${cleanExponent}}`;
     }
-    return mass.toFixed(6);
+    return exp;
+  }
+
+  function formatMassWithUnit(mass) {
+    if (mass === null || mass === undefined) return { value: 'Unknown', unit: '', isLatex: false };
+    if (mass === 0) return { value: '0', unit: 'MeV', isLatex: false };
+    
+    // Use GeV for masses >= 1000 MeV
+    if (Math.abs(mass) >= 1000) {
+      const gev = mass / 1000;
+      if (Math.abs(gev) < 0.001 || Math.abs(gev) > 10000) {
+        return { value: formatScientificLatex(gev), unit: 'GeV', isLatex: true };
+      }
+      return { value: gev.toFixed(gev >= 100 ? 1 : 3), unit: 'GeV', isLatex: false };
+    }
+    
+    // Use MeV for smaller masses
+    if (Math.abs(mass) < 0.001 || Math.abs(mass) > 10000) {
+      return { value: formatScientificLatex(mass), unit: 'MeV', isLatex: true };
+    }
+    return { value: mass.toFixed(mass >= 100 ? 2 : 6), unit: 'MeV', isLatex: false };
+  }
+
+  function formatMass(mass) {
+    const formatted = formatMassWithUnit(mass);
+    return formatted.value;
   }
 
   function formatLifetime(lifetime) {
     if (lifetime === null || lifetime === undefined) return 'Unknown';
     if (lifetime === Infinity || lifetime === -1) return 'Stable';
-    return lifetime.toExponential(3);
+    return formatScientificLatex(lifetime);
   }
 
-  function formatCharge(charge) {
+  function formatCharge(charge, threeCharge) {
     if (charge === null || charge === undefined) return 'Unknown';
     if (charge === 0) return '0';
-    if (charge === 1) return '+1';
-    if (charge === -1) return '-1';
-    return charge > 0 ? `+${charge}` : charge.toString();
+    
+    // Use three-charge parameter for exact fractional charges
+    if (threeCharge !== null && threeCharge !== undefined) {
+      const sign = threeCharge < 0 ? '-' : '';
+      const abs_three_charge = Math.abs(threeCharge);
+      
+      if (abs_three_charge === 1) {
+        return `${sign}\\frac{1}{3}`;
+      } else if (abs_three_charge === 2) {
+        return `${sign}\\frac{2}{3}`;
+      } else if (abs_three_charge === 3) {
+        return `${sign}1`;
+      } else if (abs_three_charge === 6) {
+        return `${sign}2`;
+      } else if (abs_three_charge === 9) {
+        return `${sign}3`;
+      }
+    }
+    
+    // For other values, round to reasonable precision
+    return charge.toFixed(3);
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined) return 'Unknown';
+    if (value === 0) return '0';
+    
+    // For integers, show as-is
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+    
+    // For decimals, use reasonable precision
+    if (Math.abs(value) < 0.001 || Math.abs(value) > 10000) {
+      return formatScientificLatex(value);
+    }
+    
+    return value.toFixed(3);
   }
 
   $: particleType = getParticleType(particle);
@@ -189,25 +254,33 @@
       <div class="space-y-3">
         <div class="flex justify-between items-center py-2 border-b border-gray-200">
           <span class="text-gray-600">PDG ID</span>
-          <span class="font-mono font-semibold text-gray-900">{particle.pdgid}</span>
+          <span class="font-mono font-semibold text-gray-900">
+            <LaTeX math={formatNumber(particle.pdgid)} />
+          </span>
         </div>
 
         <div class="flex justify-between items-center py-2 border-b border-gray-200">
           <span class="text-gray-600">Electric Charge</span>
-          <span class="font-mono font-semibold text-gray-900">{formatCharge(particle.charge)} e</span>
+          <span class="font-mono font-semibold text-gray-900">
+            <LaTeX math={formatCharge(particle.charge, particle.three_charge)} /> e
+          </span>
         </div>
 
         {#if particle.three_charge !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-gray-600">Three-Charge</span>
-            <span class="font-mono font-semibold text-gray-900">{particle.three_charge}</span>
+            <span class="font-mono font-semibold text-gray-900">
+              <LaTeX math={formatNumber(particle.three_charge)} />
+            </span>
           </div>
         {/if}
 
         {#if particle.spin !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-gray-600">Spin</span>
-            <span class="font-mono font-semibold text-gray-900">{particle.spin}</span>
+            <span class="font-mono font-semibold text-gray-900">
+              <LaTeX math={formatNumber(particle.spin)} />
+            </span>
           </div>
         {/if}
       </div>
@@ -220,27 +293,35 @@
       <div class="space-y-3">
         <div class="flex justify-between items-center py-2 border-b border-gray-200">
           <span class="text-gray-600">Mass</span>
-          <span class="font-mono font-semibold text-gray-900">{formatMass(particle.mass)} MeV/c²</span>
+          <span class="font-mono font-semibold text-gray-900">
+            <LaTeX math={formatMassWithUnit(particle.mass).value} /> {formatMassWithUnit(particle.mass).unit}/c²
+          </span>
         </div>
 
         {#if particle.width !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-gray-600">Width</span>
-            <span class="font-mono font-semibold text-gray-900">{formatMass(particle.width)} MeV</span>
+            <span class="font-mono font-semibold text-gray-900">
+              <LaTeX math={formatMassWithUnit(particle.width).value} /> {formatMassWithUnit(particle.width).unit}
+            </span>
           </div>
         {/if}
 
         {#if particle.lifetime !== null}
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-gray-600">Lifetime</span>
-            <span class="font-mono font-semibold text-gray-900">{formatLifetime(particle.lifetime)} s</span>
+            <span class="font-mono font-semibold text-gray-900">
+              <LaTeX math={formatLifetime(particle.lifetime)} /> s
+            </span>
           </div>
         {/if}
 
         {#if particle.ctau !== null && particle.ctau !== 0}
           <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-gray-600">cτ (decay length)</span>
-            <span class="font-mono font-semibold text-gray-900">{formatMass(particle.ctau)} mm</span>
+            <span class="font-mono font-semibold text-gray-900">
+              <LaTeX math={formatNumber(particle.ctau)} /> mm
+            </span>
           </div>
         {/if}
       </div>

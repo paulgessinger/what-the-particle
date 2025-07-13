@@ -137,7 +137,7 @@ def create_particle_data(particle: Particle) -> Dict[str, Any]:
         "anti_particle_pdgid": int(anti_particle.pdgid) if has_antiparticle else None,
         "anti_particle_name": anti_particle.name if has_antiparticle else None,
         "status": str(particle.status) if hasattr(particle, "status") and particle.status is not None else None,
-        "lifetime": safe_float(particle.lifetime),
+        "lifetime": safe_float(particle.lifetime / 1e9) if particle.lifetime is not None and particle.lifetime != 0 else safe_float(particle.lifetime),  # Convert ns to s
         "ctau": safe_float(getattr(particle, "ctau", None)),
     }
 
@@ -274,6 +274,7 @@ def generate_popular_particles() -> List[Dict[str, Any]]:
                 "latex_name": getattr(particle, "latex_name", particle.name),
                 "mass": safe_float(particle.mass),
                 "charge": safe_float(particle.charge),
+                "three_charge": getattr(particle, "three_charge", None),
             })
         except Exception as e:
             logger.warning(f"Failed to process popular particle {pdgid}: {e}")
