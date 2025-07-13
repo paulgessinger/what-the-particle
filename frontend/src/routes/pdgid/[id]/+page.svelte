@@ -2,21 +2,16 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import axios from 'axios';
   import ParticleCard from '../../../lib/components/ParticleCard.svelte';
   import SearchBar from '../../../lib/components/SearchBar.svelte';
   import PopularParticles from '../../../lib/components/PopularParticles.svelte';
-
-  // Use the same origin as the current page when served by FastAPI
-  const API_BASE = typeof window !== 'undefined' 
-    ? window.location.origin
-    : 'http://localhost:8765';
 
   let searchQuery = '';
   let currentParticle = null;
   let loading = false;
   let error = null;
   let popularParticles = [];
+  let nameMapping = null;
 
   // Get the particle ID from the URL parameter
   $: particleId = $page.params.id;
@@ -44,12 +39,27 @@
   }
 
   onMount(async () => {
-    // Load popular particles on mount
+    // Load popular particles and name mapping on mount
     try {
-      const response = await axios.get(`${API_BASE}/popular`);
-      popularParticles = response.data.particles;
+      const [popularResponse, nameMappingResponse] = await Promise.all([
+        fetch('/particles/popular.json'),
+        fetch('/particles/name-mapping.json')
+      ]);
+      
+      if (popularResponse.ok) {
+        const popularData = await popularResponse.json();
+        popularParticles = popularData.particles;
+      } else {
+        console.error('Failed to load popular particles');
+      }
+      
+      if (nameMappingResponse.ok) {
+        nameMapping = await nameMappingResponse.json();
+      } else {
+        console.error('Failed to load name mapping');
+      }
     } catch (err) {
-      console.error('Failed to load popular particles:', err);
+      console.error('Failed to load data:', err);
     }
   });
 
@@ -60,15 +70,24 @@
     error = null;
 
     try {
-      const response = await axios.get(`${API_BASE}/particle/${pdgId}`);
-      currentParticle = response.data;
+      const response = await fetch(`/particles/${pdgId}.json`);
       
-      // Update URL if needed (but don't cause infinite loop)
-      if (particleId !== pdgId.toString()) {
-        goto(`/pdgid/${pdgId}`, { replaceState: true });
+      if (response.ok) {
+        currentParticle = await response.json();
+        
+        // Update URL if needed (but don't cause infinite loop)
+        if (particleId !== pdgId.toString()) {
+          goto(`/pdgid/${pdgId}`, { replaceState: true });
+        }
+      } else if (response.status === 404) {
+        error = `Particle with PDG ID ${pdgId} not found`;
+        currentParticle = null;
+      } else {
+        error = 'Failed to fetch particle data';
+        currentParticle = null;
       }
     } catch (err) {
-      error = err.response?.data?.detail || 'Failed to fetch particle data';
+      error = 'Failed to fetch particle data';
       currentParticle = null;
     } finally {
       loading = false;
@@ -76,24 +95,37 @@
   }
 
   async function searchParticleByText(query) {
-    if (!query) return;
+    if (!query || !nameMapping) return;
 
     loading = true;
     error = null;
 
     try {
-      const response = await axios.get(`${API_BASE}/search/${encodeURIComponent(query)}`);
-      const results = response.data.particles;
+      const queryLower = query.toLowerCase().trim();
       
-      if (results.length > 0) {
+      // Check for exact match first
+      let pdgIds = nameMapping[queryLower];
+      
+      // If no exact match, try fuzzy matching
+      if (!pdgIds) {
+        const searchKeys = Object.keys(nameMapping);
+        const fuzzyMatch = searchKeys.find(key => 
+          key.includes(queryLower) || queryLower.includes(key)
+        );
+        if (fuzzyMatch) {
+          pdgIds = nameMapping[fuzzyMatch];
+        }
+      }
+      
+      if (pdgIds && pdgIds.length > 0) {
         // If we get results, navigate to the first one with search parameter
-        goto(`/pdgid/${results[0].pdgid}?search=${encodeURIComponent(query)}`);
+        goto(`/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
       } else {
         error = `No particles found matching "${query}"`;
         currentParticle = null;
       }
     } catch (err) {
-      error = err.response?.data?.detail || 'Failed to search particles';
+      error = 'Failed to search particles';
       currentParticle = null;
     } finally {
       loading = false;

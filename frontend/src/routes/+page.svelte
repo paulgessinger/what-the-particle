@@ -1,27 +1,37 @@
 <script>
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import axios from 'axios';
   import SearchBar from '../lib/components/SearchBar.svelte';
   import PopularParticles from '../lib/components/PopularParticles.svelte';
-
-  // Use the same origin as the current page when served by FastAPI
-  const API_BASE = typeof window !== 'undefined' 
-    ? window.location.origin
-    : 'http://localhost:8765';
 
   let searchQuery = '';
   let loading = false;
   let error = null;
   let popularParticles = [];
+  let nameMapping = null;
 
   onMount(async () => {
-    // Load popular particles on mount
+    // Load popular particles and name mapping on mount
     try {
-      const response = await axios.get(`${API_BASE}/popular`);
-      popularParticles = response.data.particles;
+      const [popularResponse, nameMappingResponse] = await Promise.all([
+        fetch('/particles/popular.json'),
+        fetch('/particles/name-mapping.json')
+      ]);
+      
+      if (popularResponse.ok) {
+        const popularData = await popularResponse.json();
+        popularParticles = popularData.particles;
+      } else {
+        console.error('Failed to load popular particles');
+      }
+      
+      if (nameMappingResponse.ok) {
+        nameMapping = await nameMappingResponse.json();
+      } else {
+        console.error('Failed to load name mapping');
+      }
     } catch (err) {
-      console.error('Failed to load popular particles:', err);
+      console.error('Failed to load data:', err);
     }
   });
 
@@ -34,31 +44,47 @@
   }
 
   async function searchParticleByText(query) {
-    if (!query) return;
+    if (!query || !nameMapping) return;
 
     loading = true;
     error = null;
 
     try {
-      const response = await axios.get(`${API_BASE}/search/${encodeURIComponent(query)}`);
-      const results = response.data.particles;
+      const queryLower = query.toLowerCase().trim();
       
-      if (results.length > 0) {
-        // If we get results, navigate to the first one
-        goto(`/pdgid/${results[0].pdgid}`);
+      // Check for exact match first
+      let pdgIds = nameMapping[queryLower];
+      
+      // If no exact match, try fuzzy matching
+      if (!pdgIds) {
+        const searchKeys = Object.keys(nameMapping);
+        const fuzzyMatch = searchKeys.find(key => 
+          key.includes(queryLower) || queryLower.includes(key)
+        );
+        if (fuzzyMatch) {
+          pdgIds = nameMapping[fuzzyMatch];
+        }
+      }
+      
+      if (pdgIds && pdgIds.length > 0) {
+        // If we get results, navigate to the first one with search parameter
+        goto(`/pdgid/${pdgIds[0]}?search=${encodeURIComponent(query)}`);
       } else {
         error = `No particles found matching "${query}"`;
         loading = false;
       }
     } catch (err) {
-      error = err.response?.data?.detail || 'Failed to search particles';
+      error = 'Failed to search particles';
       loading = false;
     }
   }
 
   function handlePopularParticleClick(particle) {
-    searchQuery = particle.pdgid.toString();
-    goto(`/pdgid/${particle.pdgid}`);
+    // Use descriptive name if available, otherwise PDG ID
+    const searchTerm = particle.descriptive_name && particle.descriptive_name !== particle.name 
+      ? particle.descriptive_name 
+      : particle.pdgid.toString();
+    goto(`/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 </script>
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "uv run ../generate_data.py && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
@@ -27,7 +27,6 @@
     "vite": "^4.4.2"
   },
   "dependencies": {
-    "axios": "^1.5.0",
     "katex": "^0.16.8"
   }
 }
