@@ -35,6 +35,67 @@
     return 'particle';
   }
 
+  function getWikipediaUrl(particle) {
+    const pdgId = Math.abs(particle.pdgid);
+    const descriptiveName = particle.descriptive_name?.toLowerCase();
+    
+    // Mapping of particles to their Wikipedia URLs
+    const wikipediaMap = {
+      // Leptons
+      11: "https://en.wikipedia.org/wiki/Electron",
+      13: "https://en.wikipedia.org/wiki/Muon", 
+      15: "https://en.wikipedia.org/wiki/Tau_(particle)",
+      12: "https://en.wikipedia.org/wiki/Electron_neutrino",
+      14: "https://en.wikipedia.org/wiki/Muon_neutrino",
+      16: "https://en.wikipedia.org/wiki/Tau_neutrino",
+      
+      // Quarks
+      1: "https://en.wikipedia.org/wiki/Down_quark",
+      2: "https://en.wikipedia.org/wiki/Up_quark",
+      3: "https://en.wikipedia.org/wiki/Strange_quark",
+      4: "https://en.wikipedia.org/wiki/Charm_quark",
+      5: "https://en.wikipedia.org/wiki/Bottom_quark",
+      6: "https://en.wikipedia.org/wiki/Top_quark",
+      
+      // Gauge bosons
+      21: "https://en.wikipedia.org/wiki/Gluon",
+      22: "https://en.wikipedia.org/wiki/Photon",
+      23: "https://en.wikipedia.org/wiki/W_and_Z_bosons",
+      24: "https://en.wikipedia.org/wiki/W_and_Z_bosons",
+      25: "https://en.wikipedia.org/wiki/Higgs_boson",
+      
+      // Baryons
+      2212: "https://en.wikipedia.org/wiki/Proton",
+      2112: "https://en.wikipedia.org/wiki/Neutron",
+      
+      // Mesons
+      111: "https://en.wikipedia.org/wiki/Pion",
+      211: "https://en.wikipedia.org/wiki/Pion",
+      321: "https://en.wikipedia.org/wiki/Kaon",
+      311: "https://en.wikipedia.org/wiki/Kaon",
+      130: "https://en.wikipedia.org/wiki/Kaon",
+      310: "https://en.wikipedia.org/wiki/Kaon",
+    };
+    
+    return wikipediaMap[pdgId] || null;
+  }
+
+  function isStable(particle) {
+    // A particle is considered stable if:
+    // 1. Width is exactly 0 (or null/undefined), AND
+    // 2. Lifetime is infinite (or null/undefined)
+    const width = particle.width;
+    const lifetime = particle.lifetime;
+    
+    // Check if width is exactly zero
+    const hasZeroWidth = width === 0;
+    
+    // Check if lifetime is infinite or undefined (stable)
+    const hasInfiniteLifetime = lifetime === null || lifetime === undefined || lifetime === Infinity;
+    
+    return hasZeroWidth && hasInfiniteLifetime;
+  }
+
   function formatMass(mass) {
     if (mass === null || mass === undefined) return 'Unknown';
     if (mass === 0) return '0';
@@ -63,7 +124,10 @@
   
   function handleAntiparticleClick() {
     if (particle.anti_particle_pdgid && particle.anti_particle_pdgid !== particle.pdgid) {
-      dispatch('antiparticleClick', { pdgid: particle.anti_particle_pdgid });
+      dispatch('antiparticleClick', { 
+        pdgid: particle.anti_particle_pdgid,
+        name: particle.anti_particle_name
+      });
     }
   }
 </script>
@@ -75,7 +139,20 @@
         {particle.pdgid}
       </div>
       <div>
-        <h2 class="text-2xl font-bold text-gray-900">{particle.name}</h2>
+        <div class="flex items-center space-x-3">
+          <h2 class="text-2xl font-bold text-gray-900">{particle.name}</h2>
+          {#if getWikipediaUrl(particle)}
+            <a 
+              href={getWikipediaUrl(particle)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="text-blue-600 hover:text-blue-800 transition-colors duration-200 text-sm font-medium"
+              title="View on Wikipedia"
+            >
+              Wikipedia
+            </a>
+          {/if}
+        </div>
         {#if particle.descriptive_name && particle.descriptive_name !== particle.name}
           <div class="text-lg text-gray-600 mt-1">
             {particle.descriptive_name}
@@ -86,9 +163,20 @@
             <LaTeX math={particle.latex_name} className="text-lg" />
           </div>
         {/if}
-        <span class="particle-badge particle-{particleType} mt-2">
-          {particleType.charAt(0).toUpperCase() + particleType.slice(1)}
-        </span>
+        <div class="flex items-center space-x-2 mt-2">
+          <span class="particle-badge particle-{particleType}">
+            Category: {particleType.charAt(0).toUpperCase() + particleType.slice(1)}
+          </span>
+          {#if isStable(particle)}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              Stable
+            </span>
+          {:else}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+              Unstable
+            </span>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
@@ -202,7 +290,10 @@
             </svg>
             <div class="text-left">
               <div class="text-sm font-medium text-blue-800">Antiparticle</div>
-              <div class="text-blue-600">PDG ID: {particle.anti_particle_pdgid}</div>
+              {#if particle.anti_particle_name}
+                <div class="text-blue-600 font-medium">{particle.anti_particle_name}</div>
+              {/if}
+              <div class="text-blue-600 text-sm">PDG ID: {particle.anti_particle_pdgid}</div>
             </div>
           </div>
           <svg class="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">

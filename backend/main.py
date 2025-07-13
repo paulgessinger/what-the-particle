@@ -83,6 +83,9 @@ async def precompute_particle_data():
                     PARTICLE_NAME_MAP['antineutron'] = particle
                 elif pdgid == 22:  # photon
                     PARTICLE_NAME_MAP['photon'] = particle
+                elif pdgid == 25:  # Higgs boson
+                    PARTICLE_NAME_MAP['higgs'] = particle
+                    PARTICLE_NAME_MAP['higgs boson'] = particle
                 elif pdgid == 15:  # tau
                     PARTICLE_NAME_MAP['tau'] = particle
                 elif pdgid == -15:  # antitau
@@ -195,6 +198,7 @@ class ParticleInfo(BaseModel):
     c_parity: int | None
     g_parity: int | None
     anti_particle_pdgid: int | None
+    anti_particle_name: str | None
     status: str | None
     lifetime: float | None
     ctau: float | None
@@ -231,6 +235,7 @@ async def get_particle_by_pdgid(pdgid: int) -> ParticleInfo:
             c_parity=getattr(p, "C", None),
             g_parity=getattr(p, "G", None),
             anti_particle_pdgid=int(p.invert().pdgid) if p.invert() != p else None,
+            anti_particle_name=p.invert().name if p.invert() != p else None,
             status=str(p.status)
             if hasattr(p, "status") and p.status is not None
             else None,
@@ -408,6 +413,7 @@ async def get_popular_particles() -> dict[str, list[dict[str, Any]]]:
         13,  # muon
         -13,  # anti-muon
         22,  # photon
+        25,  # Higgs boson
         111,  # neutral pion
         211,  # charged pion
         -211,  # negative pion
@@ -431,6 +437,7 @@ async def get_popular_particles() -> dict[str, list[dict[str, Any]]]:
                 {
                     "pdgid": int(p.pdgid),
                     "name": p.name,
+                    "descriptive_name": get_descriptive_name(p),
                     "latex_name": getattr(p, "latex_name", p.name),
                     "mass": safe_float(p.mass),
                     "charge": safe_float(p.charge),

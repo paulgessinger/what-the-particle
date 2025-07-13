@@ -21,19 +21,16 @@
   // Get the particle ID from the URL parameter
   $: particleId = $page.params.id;
   
-  // Initialize search query from URL parameter only once, then let user control it
-  let initialLoad = true;
+  // Track the current particle ID to detect navigation
+  let currentParticleId = null;
+  
+  // Update search query only when navigating to a new particle
   $: {
-    if (initialLoad) {
+    if (particleId !== currentParticleId) {
+      currentParticleId = particleId;
       const searchParam = $page.url.searchParams.get('search');
       searchQuery = searchParam || particleId || '';
-      initialLoad = false;
     }
-  }
-  
-  // Reset initialLoad flag when URL changes (for navigation between particles)
-  $: if (particleId) {
-    initialLoad = true;
   }
 
   // Reactive statement to load particle when URL changes
@@ -112,13 +109,17 @@
   }
 
   function handlePopularParticleClick(particle) {
-    // No search parameter when clicking popular particles
-    goto(`/pdgid/${particle.pdgid}`);
+    // Use descriptive name if available, otherwise PDG ID
+    const searchTerm = particle.descriptive_name && particle.descriptive_name !== particle.name 
+      ? particle.descriptive_name 
+      : particle.pdgid.toString();
+    goto(`/pdgid/${particle.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 
   function handleAntiparticleClick(event) {
-    // No search parameter when clicking antiparticle links
-    goto(`/pdgid/${event.detail.pdgid}`);
+    // Use antiparticle name if available, otherwise PDG ID
+    const searchTerm = event.detail.name || event.detail.pdgid.toString();
+    goto(`/pdgid/${event.detail.pdgid}?search=${encodeURIComponent(searchTerm)}`);
   }
 </script>
 
